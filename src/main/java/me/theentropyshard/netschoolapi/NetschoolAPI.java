@@ -31,10 +31,7 @@ public class NetschoolAPI {
     private final String password;
     private final String schoolName;
 
-    private final CloseableHttpClient httpClient;
-    private final HttpClientContext clientContext;
-    private final CookieStore cookieStore;
-    private final List<Header> headers;
+    private final HttpClientWrapper client;
 
     private final ObjectMapper objectMapper;
 
@@ -68,20 +65,12 @@ public class NetschoolAPI {
     private int userId;
     private int yearId;
 
-    public NetschoolAPI(String username, String password, String schoolName) {
+    public NetschoolAPI(String baseUrl, String username, String password, String schoolName) {
         this.username = username;
         this.password = password;
         this.schoolName = schoolName;
 
-        this.headers = new ArrayList<>();
-
-        this.cookieStore = new BasicCookieStore();
-        this.httpClient = HttpClients.custom()
-                .setDefaultCookieStore(this.cookieStore)
-                .setDefaultHeaders(this.headers)
-                .build();
-        this.clientContext = HttpClientContext.create();
-        this.clientContext.setAttribute(HttpClientContext.COOKIE_STORE, this.cookieStore);
+        this.client = new HttpClientWrapper(baseUrl + "/webapi/");
 
         this.objectMapper = new ObjectMapper();
 
@@ -90,12 +79,7 @@ public class NetschoolAPI {
 
     private void init() {
         log.info("Looking for schools...");
-        try {
-            HttpGet httpGet = new HttpGet(Constants.SCHOOLS_URL);
-            CloseableHttpResponse response = httpClient.execute(httpGet);
-            if(response == null) {
-                throw new RuntimeException("Http Response for " + Constants.SCHOOLS_URL + " is null");
-            }
+        try(CloseableHttpResponse response = this.client.get(Constants.SCHOOLS_URL)) {
             SchoolDataObject[] schoolDataObjects = this.objectMapper.readValue(response.getEntity().getContent(), SchoolDataObject[].class);
             for(SchoolDataObject schoolDataObject : schoolDataObjects) {
                 if(schoolDataObject != null) {
@@ -120,26 +104,14 @@ public class NetschoolAPI {
         log.info("Trying to login...");
 
         try {
-            HttpPost httpPost = new HttpPost(Constants.LOGIN_URL);
+            AuthDataObject ado = this.getAuthData();
+            String requestString = this.getRequestString(ado);
+            StringEntity content = new StringEntity(requestString);
 
-            AuthDataObject authData = this.getAuthData();
-            String requestString = this.getRequestString(authData);
-            httpPost.setEntity(new StringEntity(requestString));
-
-            httpPost.setHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-            httpPost.setHeader("Accept-Encoding", "gzip, deflate, br");
-            httpPost.setHeader("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
-            httpPost.setHeader("X-Requested-With", "XMLHttpRequest");
-            httpPost.setHeader("Referer", Constants.BASE_URL);
-            httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-
-            try(CloseableHttpResponse response = httpClient.execute(httpPost, this.clientContext)) {
-                //Scanner sc = new Scanner(response.getEntity().getContent());
-                // while(sc.hasNextLine()) {
+            try(CloseableHttpResponse response = this.client.post(Constants.LOGIN_URL, content)) {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
-               // System.out.println(node);
-                this.headers.add(new BasicHeader("at", node.get("at").textValue()));
-                // }
+                System.out.println(node);
+                this.client.addHeader(new BasicHeader("at", node.get("at").textValue()));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -150,16 +122,7 @@ public class NetschoolAPI {
 
     public void printAnnouncements() {
         try {
-            HttpGet httpGet = new HttpGet(Constants.ANNOUNCEMENTS_URL + "?take=-1");
-
-            httpGet.setHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-            httpGet.setHeader("Accept-Encoding", "gzip, deflate, br");
-            httpGet.setHeader("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
-            httpGet.setHeader("X-Requested-With", "XMLHttpRequest");
-            httpGet.setHeader("Referer", Constants.BASE_URL);
-            httpGet.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-
-            CloseableHttpResponse response = httpClient.execute(httpGet);
+            CloseableHttpResponse response = this.client.get(Constants.ANNOUNCEMENTS_URL + "?take=-1");
             Scanner sc = new Scanner(response.getEntity().getContent());
             while(sc.hasNextLine()) {
                 System.out.println(sc.nextLine());
@@ -172,14 +135,10 @@ public class NetschoolAPI {
     private AuthDataObject getAuthData() {
         log.info("Trying to get auth data...");
 
-        HttpPost httpPost = new HttpPost(Constants.GET_DATA_URL);
-        httpPost.setHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-        httpPost.setHeader("Accept-Encoding", "gzip, deflate, br");
-        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
         AuthDataObject authDataObject;
         try {
             GetDataObject getDataObject;
-            try(CloseableHttpResponse response = httpClient.execute(httpPost, this.clientContext)) {
+            try(CloseableHttpResponse response = this.client.post(Constants.GET_DATA_URL, new StringEntity(""))) {
                 getDataObject = objectMapper.readValue(response.getEntity().getContent(), GetDataObject.class);
             }
             String encodedPassword = Utils.md5(this.password.getBytes(Charset.forName("windows-1251")));
@@ -201,7 +160,7 @@ public class NetschoolAPI {
     public void logout() {
         log.info("Trying to log out...");
         try {
-            try(CloseableHttpResponse response = httpClient.execute(new HttpPost(Constants.LOGOUT_URL))) {
+            try(CloseableHttpResponse response = this.client.get(Constants.LOGOUT_URL)) {
                 if(response.getStatusLine().getStatusCode() == 401) { //unauthorized
                     return;
                 }
