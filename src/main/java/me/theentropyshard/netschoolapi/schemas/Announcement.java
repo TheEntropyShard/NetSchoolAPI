@@ -17,20 +17,59 @@
 
 package me.theentropyshard.netschoolapi.schemas;
 
+import java.util.Arrays;
+
 public class Announcement {
     public String description;
     public String postDate;
     public String deleteDate;
     public Author author;
-    public String em;
+    public Em em;
     public String recipientInfo;
     public Attachment[] attachments;
     public int id;
     public String name;
 
+    public static class Em {
+        public int id;
+        public String name;
+
+        @Override
+        public String toString() {
+            return "Em{" +
+                    "id=" + id +
+                    ", name='" + name + '\'' +
+                    '}';
+        }
+    }
+
     public static class Author {
         public int id;
         public String fio;
         public String nickName;
+
+        @Override
+        public String toString() {
+            return "Author{" +
+                    "id=" + id +
+                    ", fio='" + fio + '\'' +
+                    ", nickName='" + nickName + '\'' +
+                    '}';
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Announcement{" +
+                "description='" + description + '\'' +
+                ", postDate='" + postDate + '\'' +
+                ", deleteDate='" + deleteDate + '\'' +
+                ", author=" + author +
+                ", em=" + em +
+                ", recipientInfo='" + recipientInfo + '\'' +
+                ", attachments=" + Arrays.toString(attachments) +
+                ", id=" + id +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

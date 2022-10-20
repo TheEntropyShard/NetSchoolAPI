@@ -150,6 +150,10 @@ public class NetSchoolAPI implements Closeable {
         }
     }
 
+    public Announcement[] getAnnouncements() throws IOException {
+        return this.objectMapper.readValue(this.getJsonAnnouncements(), Announcement[].class);
+    }
+
     /**
      * Returns a JSON diary bounded by week start and week end
      *
