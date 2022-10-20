@@ -7,10 +7,10 @@ public class Test {
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
         NetSchoolAPI netschool = new NetSchoolAPI(
-                "https://giseo.rkomi.ru",
-                env.get("USERNAME"),
-                env.get("PASSWORD"),
-                "МАОУ \"Лицей № 1\" г. Сыктывкара"
+                "https://адрес.вашего.дневника",
+                "логин",
+                "пароль",
+                "Название школы"
         );
         netschool.login();
 
@@ -18,7 +18,9 @@ public class Test {
             System.out.println(netschool.getJsonAnnouncements());
             System.out.println();
             //System.out.println(netschool.getJsonDiary("2022-10-3", "2022-10-9"));
-            System.out.println(netschool.getAttachments(netschool.getDiary("2022-10-3", "2022-10-9")));
+            List<Attachment> attachments = netschool.getAttachments(netschool.getDiary("2022-10-3", "2022-10-9"));
+            System.out.println(attachments);
+            netschool.downloadAttachment(new File("attachment.docx"), attachments.get(0));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
