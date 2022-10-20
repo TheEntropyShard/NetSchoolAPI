@@ -1,6 +1,9 @@
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
+import me.theentropyshard.netschoolapi.schemas.Attachment;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public class Test {
