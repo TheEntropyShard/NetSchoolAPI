@@ -27,8 +27,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +47,7 @@ public class NetSchoolAPI implements Closeable {
     public static final String YEARS_CURRENT = "years/current";
     public static final String ACTIVE_SESSIONS = "context/activeSessions";
     public static final String GET_ATTACHMENTS = "student/diary/get-attachments";
+    public static final String ATTACHMENTS_DOWNLOAD = "attachments/%d";
 
     private final String username;
     private final String password;
@@ -222,7 +222,29 @@ public class NetSchoolAPI implements Closeable {
         }
     }
 
-    //todo download attachment
+    public void downloadAttachment(File file, Attachment attachment) {
+        if(file == null) file = new File(System.getProperty("user.dir") + "/attachments", attachment.originalFileName);
+
+        try {
+            InputStream content = this.client.get(String.format(NetSchoolAPI.ATTACHMENTS_DOWNLOAD, attachment.id)).getEntity().getContent();
+            InputStream in = new BufferedInputStream(content);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[2048];
+            int n;
+            while (-1 != (n = in.read(buf))) {
+                out.write(buf, 0, n);
+            }
+            out.close();
+            in.close();
+            byte[] response = out.toByteArray();
+
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(response);
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Returns overdue jobs

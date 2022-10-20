@@ -66,8 +66,15 @@ public class HttpClientWrapper implements Closeable {
     }
 
     public CloseableHttpResponse get(String relativeUrl, String contentType) throws IOException {
+        return this.get(relativeUrl, contentType, new ArrayList<>());
+    }
+
+    public CloseableHttpResponse get(String relativeUrl, String contentType, List<Header> headers) throws IOException {
         HttpGet httpGet = new HttpGet(this.baseUrl + relativeUrl);
         httpGet.setHeader("Content-Type", contentType);
+        for(Header header : headers) {
+            httpGet.setHeader(header);
+        }
         return this.httpClient.execute(httpGet, this.clientContext);
     }
 
