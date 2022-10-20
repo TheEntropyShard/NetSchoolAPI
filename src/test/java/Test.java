@@ -10,10 +10,10 @@ public class Test {
     public static void main(String[] args) {
         Map<String, String> env = System.getenv();
         NetSchoolAPI netschool = new NetSchoolAPI(
-                "https://адрес.вашего.дневника",
-                "логин",
-                "пароль",
-                "Название школы"
+                System.getenv("MAIN_DOMAIN"),
+                System.getenv("USERNAME"),
+                System.getenv("PASSWORD"),
+                System.getenv("SCHOOL_NAME")
         );
         netschool.login();
 
