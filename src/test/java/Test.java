@@ -1,7 +1,6 @@
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 
 public class Test {

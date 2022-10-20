@@ -78,7 +78,7 @@ public class NetSchoolAPI implements Closeable {
                 this.school = schoolStub;
                 return;
             }
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
         throw new SchoolNotFoundException("Could not found school \"" + this.schoolName + "\"");
     }
@@ -187,6 +187,12 @@ public class NetSchoolAPI implements Closeable {
         return this.objectMapper.readValue(this.getJsonDiary(weekStart, weekEnd), Diary.class);
     }
 
+    /**
+     * Converts diary object to a list of attachments
+     * @param diary Diary object that represents a study week
+     * @return List of the attachments on provided week (diary)
+     * @throws IOException When an IO exception occurred
+     */
     public List<Attachment> getAttachments(Diary diary) throws IOException {
         List<Integer> assignIds = new ArrayList<>();
         if(!Utils.validateArray(diary.weekDays)) return new ArrayList<>();
@@ -200,16 +206,15 @@ public class NetSchoolAPI implements Closeable {
             }
         }
 
-        String json = "{\"assignId\":" + assignIds + "}";
-        StringEntity jsonContent = new StringEntity(json);
         try(CloseableHttpResponse response = this.client.post(
                 NetSchoolAPI.GET_ATTACHMENTS + "?studentId=" + this.userId,
                 "application/json; charset=UTF-8",
-                jsonContent)) {
+                new StringEntity("{\"assignId\":" + assignIds + "}"))) {
             JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
             List<Attachment> attachments = new ArrayList<>();
             for(JsonNode part : node) {
-                for(JsonNode attachmentElement : part.get("attachments")) {
+                JsonNode attachs = part.get("attachments");
+                for(JsonNode attachmentElement : attachs) {
                     attachments.add(this.objectMapper.readValue(attachmentElement.toString(), Attachment.class));
                 }
             }
@@ -221,7 +226,6 @@ public class NetSchoolAPI implements Closeable {
 
     /**
      * Returns overdue jobs
-     *
      * @param weekStart Start of week in format like 2022-10-17
      * @param weekEnd   End of week in format like 2022-10-17
      * @return JSON String
@@ -294,7 +298,7 @@ public class NetSchoolAPI implements Closeable {
     public void logout() {
         try {
             try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.LOGOUT)) {
-                if(response.getStatusLine().getStatusCode() == 401) { //unauthorize
+                if(response.getStatusLine().getStatusCode() == 401) { //unauthorized
                     //todo add something here
                 }
             }

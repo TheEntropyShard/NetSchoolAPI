@@ -29,11 +29,19 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalField;
 
+/**
+ * Various utils used around the code
+ */
 public final class Utils {
     private Utils() {
         throw new UnsupportedOperationException("Class Utils should not be instantiated");
     }
 
+    /**
+     * Hashes input using md5 algorithm
+     * @param input byte array to be hashed
+     * @return Hashed string
+     */
     public static String md5(byte[] input) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -48,27 +56,44 @@ public final class Utils {
         return null;
     }
 
-    public static String urlEncode(String s, String encoding) {
+    /**
+     * Wrappers {@code URLEncoder.encode(s, enc)} method with exception handling
+     * @param s String to be encoded
+     * @param enc Encoding to be used
+     * @return URL-Encoded string
+     */
+    public static String urlEncode(String s, String enc) {
         try {
-            return URLEncoder.encode(s, encoding);
+            return URLEncoder.encode(s, enc);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         return null;
     }
 
+    /**
+     * @return The start date of the current week in format 2022-10-17 (fullyear-month-day)
+     */
     public static String getCurrentWeekStart() {
         LocalDate today = LocalDate.now();
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         return monday.toString();
     }
 
+    /**
+     * @return The end date of the current week in format 2022-10-17 (fullyear-month-day)
+     */
     public static String getCurrentWeekEnd() {
         LocalDate today = LocalDate.now();
         LocalDate saturday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
         return saturday.toString();
     }
 
+    /**
+     * Validates array
+     * @param array The array to be validated
+     * @return True, if array is not null and not empty. False otherwise
+     */
     public static boolean validateArray(Object[] array) {
         return array != null && array.length != 0;
     }
