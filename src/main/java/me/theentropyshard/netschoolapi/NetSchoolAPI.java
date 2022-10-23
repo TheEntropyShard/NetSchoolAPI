@@ -18,46 +18,44 @@ package me.theentropyshard.netschoolapi;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.theentropyshard.netschoolapi.exceptions.SchoolNotFoundException;
 import me.theentropyshard.netschoolapi.jsonstubs.AuthDataStub;
 import me.theentropyshard.netschoolapi.jsonstubs.GetDataStub;
 import me.theentropyshard.netschoolapi.jsonstubs.SchoolStub;
+import me.theentropyshard.netschoolapi.mail.schemas.Mail;
+import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
+import me.theentropyshard.netschoolapi.reports.schemas.ReportsGroup;
+import me.theentropyshard.netschoolapi.reports.schemas.StudentGrades;
 import me.theentropyshard.netschoolapi.schemas.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class NetSchoolAPI implements Closeable {
-    public static final String LOGINDATA = "logindata";
-    public static final String GET_DATA = "auth/getdata";
-    public static final String LOGIN = "login";
-    public static final String SCHOOLS_DATABASE = "addresses/schools";
-    public static final String SCHOOL_INFO = "schools/%d/card";
-    public static final String LOGOUT = "auth/logout";
-    public static final String ANNOUNCEMENTS = "announcements";
-    public static final String DIARY_INIT = "student/diary/init";
-    public static final String DIARY = "student/diary";
-    public static final String OVERDUE = "student/diary/pastMandatory";
-    public static final String YEARS_CURRENT = "years/current";
-    public static final String ACTIVE_SESSIONS = "context/activeSessions";
-    public static final String GET_ATTACHMENTS = "student/diary/get-attachments";
-    public static final String ATTACHMENTS_DOWNLOAD = "attachments/%d";
+    public static final String REPORTS = "reports/";
 
     private final String username;
     private final String password;
     private final String schoolName;
+    private final String baseUrl;
 
     private final HttpClientWrapper client;
     private final ObjectMapper objectMapper;
 
-    private int userId;
+    private int studentId;
     private int yearId;
+    private String ver;
+    private String at;
     private SchoolStub school;
 
     public NetSchoolAPI(String baseUrl, String username, String password, String schoolName) {
@@ -65,65 +63,76 @@ public class NetSchoolAPI implements Closeable {
         this.password = password;
         this.schoolName = schoolName;
 
+        this.baseUrl = baseUrl;
+
+        if(baseUrl.charAt(baseUrl.length() - 1) == '/') baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+
         this.client = new HttpClientWrapper(baseUrl + "/webapi/");
         this.objectMapper = new ObjectMapper();
     }
 
     private void getSchoolData() {
-        try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.SCHOOLS_DATABASE)) {
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.SCHOOLS_DATABASE)) {
             SchoolStub[] schoolStubs = this.objectMapper.readValue(response.getEntity().getContent(), SchoolStub[].class);
             for(SchoolStub schoolStub : schoolStubs) {
                 if(schoolStub == null) break;
                 if(!schoolStub.name.equals(this.schoolName)) continue;
+                if(schoolStub.funcType != 2) {
+                    throw new RuntimeException("Поддерживаются только общеобразовательные школы (тип функциональности = 2), у вас " + schoolStub.funcType);
+                }
                 this.school = schoolStub;
                 return;
             }
         } catch (IOException ignored) {
         }
-        throw new SchoolNotFoundException("Could not found school \"" + this.schoolName + "\"");
+        throw new RuntimeException("Не удалось найти школу \"" + this.schoolName + "\"");
     }
 
     private AuthDataStub getAuthData() {
         try {
             GetDataStub getDataObject;
-            try(CloseableHttpResponse response = this.client.post(NetSchoolAPI.GET_DATA, new StringEntity(""))) {
+            try(CloseableHttpResponse response = this.client.post(Urls.WebApi.GET_DATA, new StringEntity(""))) {
                 getDataObject = objectMapper.readValue(response.getEntity().getContent(), GetDataStub.class);
             }
             String encodedPassword = Utils.md5(this.password.getBytes(Charset.forName("windows-1251")));
             String pw2 = Utils.md5((getDataObject.salt + encodedPassword).getBytes(Charset.forName("UTF-8"))); //for android compatibility
             if(pw2 == null) {
-                throw new RuntimeException("Password was not hashed");
+                throw new RuntimeException("Не удалось хэшировать пароль");
             }
             String pw = pw2.substring(0, this.password.length());
             return new AuthDataStub(pw, pw2, getDataObject.lt, getDataObject.ver);
         } catch (IOException e) {
-            throw new RuntimeException("Could not get auth data");
+            throw new RuntimeException("Не удалось получить данные для авторизации");
         }
     }
 
     /**
-     * Logs into system
+     * Выполняет вход в систему
      */
     public void login() {
         try {
             this.getSchoolData();
 
             AuthDataStub ado = this.getAuthData();
+            this.ver = String.valueOf(ado.ver);
             String requestString = this.getRequestBody(ado);
             StringEntity content = new StringEntity(requestString);
 
-            try(CloseableHttpResponse response = this.client.post(NetSchoolAPI.LOGIN, content)) {
+            try(CloseableHttpResponse response = this.client.post(Urls.WebApi.LOGIN, content)) {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
-                this.client.addHeader(new BasicHeader("at", node.get("at").textValue()));
+                System.out.println(node);
+                String at = node.get("at").textValue();
+                this.at = at;
+                this.client.addHeader(new BasicHeader("at", at));
             }
 
-            try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.DIARY_INIT)) {
+            try(CloseableHttpResponse response = this.client.get(Urls.WebApi.DIARY_INIT)) {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
                 int currentStudentId = node.get("currentStudentId").intValue();
-                this.userId = node.get("students").get(currentStudentId).get("studentId").intValue();
+                this.studentId = node.get("students").get(currentStudentId).get("studentId").intValue();
             }
 
-            try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.YEARS_CURRENT)) {
+            try(CloseableHttpResponse response = this.client.get(Urls.WebApi.YEARS_CURRENT)) {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
                 this.yearId = node.get("id").intValue();
             }
@@ -133,69 +142,87 @@ public class NetSchoolAPI implements Closeable {
     }
 
     /**
-     * Returns announcements
+     * Возвращает объявления в виде массива объявлений
      *
-     * @return JSON String
-     * @throws IOException When an IO exception occurred
+     * @return Список объявлений
+     * @throws IOException При IO ошибке
      */
-    public String getJsonAnnouncements() throws IOException {
-        try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.ANNOUNCEMENTS + "?take=-1")) {
-            Scanner sc = new Scanner(response.getEntity().getContent());
-            StringBuilder sb = new StringBuilder();
-            while(sc.hasNextLine()) {
-                sb.append(sc.nextLine());
-            }
-            sc.close();
-            return sb.toString();
+    public List<Announcement> getAnnouncements() throws IOException {
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.ANNOUNCEMENTS + "?take=-1")) {
+            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), Announcement[].class));
         }
     }
 
-    public Announcement[] getAnnouncements() throws IOException {
-        return this.objectMapper.readValue(this.getJsonAnnouncements(), Announcement[].class);
-    }
-
     /**
-     * Returns a JSON diary bounded by week start and week end
+     * Возвращает объект дневника от и до определенной даты (включительно)
      *
-     * @param weekStart Start of week in format like 2022-10-17
-     * @param weekEnd End of week in format like 2022-10-17
-     * @return JSON String
-     * @throws IOException When an IO exception occurred
+     * @param weekStart Начало недели в формате 2022-10-17
+     * @param weekEnd   Конец недели в формате 2022-10-17
+     * @return Объект дневника
+     * @throws IOException При IO ошибке
      */
-    public String getJsonDiary(String weekStart, String weekEnd) throws IOException {
+    public Diary getDiary(String weekStart, String weekEnd) throws IOException {
         if(weekStart == null) weekStart = Utils.getCurrentWeekStart();
         if(weekEnd == null) weekEnd = Utils.getCurrentWeekEnd();
 
         String query = String.format(
                 "?studentId=%d&yearId=%d&weekStart=%s&weekEnd=%s&withLaAssigns=true",
-                this.userId,
+                this.studentId,
                 this.yearId,
                 weekStart,
                 weekEnd
         );
 
-        try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.DIARY + query)) {
-            return this.objectMapper.readTree(response.getEntity().getContent()).toString();
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.DIARY + query)) {
+            return this.objectMapper.readValue(response.getEntity().getContent(), Diary.class);
         }
     }
 
     /**
-     * Returns a diary object bounded by week start and week end
+     * Возвращает все доступные отчеты
      *
-     * @param weekStart Start of week in format like 2022-10-17
-     * @param weekEnd End of week in format like 2022-10-17
-     * @return Diary object
-     * @throws IOException When an IO exception occurred
+     * @return Объект ReportsGroup
+     * @throws IOException При IO ошибке
      */
-    public Diary getDiary(String weekStart, String weekEnd) throws IOException {
-        return this.objectMapper.readValue(this.getJsonDiary(weekStart, weekEnd), Diary.class);
+    public List<ReportsGroup> getAvailableReports() throws IOException {
+        try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.REPORTS)) {
+            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), ReportsGroup[].class));
+        }
     }
 
     /**
-     * Converts diary object to a list of attachments
-     * @param diary Diary object that represents a study week
-     * @return List of the attachments on provided week (diary)
-     * @throws IOException When an IO exception occurred
+     * Возвращает объект оценок ученика
+     *
+     * @param id Идентификатор отчета из {@code getAvailableReports()}
+     * @return Объект StudentGrades
+     * @throws IOException При IO ошибке
+     */
+    public StudentGrades getStudentGradesById(String id) throws IOException {
+        return null;
+    }
+
+    //TODO implement receiving reports
+
+    public Mail getMail(int boxId, int startIndex, int pageSize, SortingType type) throws IOException {
+        String query = "?";
+        query = query + "AT=" + this.at + "&";
+        query = query + "nBoxID=" + boxId + "&";
+        query = query + "jtStartIndex=" + startIndex + "&";
+        query = query + "jtPageSize=" + pageSize + "&";
+        query = query + "jtSorting=" + type.VALUE;
+
+        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.GET_MESSAGES + query, new StringEntity(""))) {
+            JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
+            return this.objectMapper.readValue(node.toString(), Mail.class);
+        }
+    }
+
+    /**
+     * Достает все прикрепленные файлы из объекта дневника
+     *
+     * @param diary Объект дневника, представляющий неделю
+     * @return Список всех прикрепленных файлов на предоставленной неделе (дневник)
+     * @throws IOException При IO ошибке
      */
     public List<Attachment> getAttachments(Diary diary) throws IOException {
         List<Integer> assignIds = new ArrayList<>();
@@ -211,7 +238,7 @@ public class NetSchoolAPI implements Closeable {
         }
 
         try(CloseableHttpResponse response = this.client.post(
-                NetSchoolAPI.GET_ATTACHMENTS + "?studentId=" + this.userId,
+                Urls.WebApi.GET_ATTACHMENTS + "?studentId=" + this.studentId,
                 "application/json; charset=UTF-8",
                 new StringEntity("{\"assignId\":" + assignIds + "}"))) {
             JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
@@ -226,106 +253,90 @@ public class NetSchoolAPI implements Closeable {
         }
     }
 
-    public void downloadAttachment(File file, Attachment attachment) {
+    /**
+     * Скачивает прикрепленный файл
+     *
+     * @param file       Файл, в который сохранить скачанный файл
+     * @param attachment Прикрепленный файл, который нужно скачать
+     */
+    public void downloadAttachment(File file, Attachment attachment) throws IOException {
         if(file == null) file = new File(System.getProperty("user.dir") + "/attachments", attachment.originalFileName);
 
-        try {
-            InputStream content = this.client.get(String.format(NetSchoolAPI.ATTACHMENTS_DOWNLOAD, attachment.id)).getEntity().getContent();
-            InputStream in = new BufferedInputStream(content);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buf = new byte[2048];
-            int n;
-            while (-1 != (n = in.read(buf))) {
-                out.write(buf, 0, n);
-            }
-            out.close();
-            in.close();
-            byte[] response = out.toByteArray();
+        InputStream content = this.client.get(String.format(Urls.WebApi.ATTACHMENTS_DOWNLOAD, attachment.id)).getEntity().getContent();
+        Files.copy(content, file.toPath());
+    }
 
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(response);
-            fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public String getGradesForSubject(String startDate, String endDate, int subjectId) throws IOException {
+
+        try(CloseableHttpResponse response = this.client.get("")) {
+
         }
+
+        return "";
     }
 
     /**
-     * Returns overdue jobs
-     * @param weekStart Start of week in format like 2022-10-17
-     * @param weekEnd   End of week in format like 2022-10-17
-     * @return JSON String
-     * @throws IOException When an IO exception occurred
+     * Возвращает пропущенные задания
+     *
+     * @param weekStart Начало недели в формате 2022-10-17
+     * @param weekEnd   Конец недели в формате 2022-10-17
+     * @return Список заданий
+     * @throws IOException При IO ошибке
      */
-    public String getJsonOverdue(String weekStart, String weekEnd) throws IOException {
+    public List<Assignment> getOverdueJobs(String weekStart, String weekEnd) throws IOException {
         if(weekStart == null) weekStart = Utils.getCurrentWeekStart();
         if(weekEnd == null) weekEnd = Utils.getCurrentWeekEnd();
 
         String query = String.format(
                 "?studentId=%d&yearId=%d&weekStart=%s&weekEnd=%s",
-                this.userId,
+                this.studentId,
                 this.yearId,
                 weekStart,
                 weekEnd
         );
 
-        try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.OVERDUE + query)) {
-            return this.objectMapper.readTree(response.getEntity().getContent()).toString();
-        }
-    }
-
-    //todo make Overdue class and corresponding method
-
-    /**
-     * Returns information about school
-     *
-     * @return JSON String
-     * @throws IOException When an IO exception occurred
-     */
-    public String getJsonSchoolInfo() throws IOException {
-        try(CloseableHttpResponse response = this.client.get(String.format(NetSchoolAPI.SCHOOL_INFO, this.school.id))) {
-            return this.objectMapper.readTree(response.getEntity().getContent()).toString();
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.OVERDUE + query)) {
+            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), Assignment[].class));
         }
     }
 
     /**
-     * Returns information about school
+     * Возвращает информацию о школе
      *
-     * @return SchoolCard object
-     * @throws IOException When an IO exception occurred
+     * @return Объект SchoolCard
+     * @throws IOException При IO ошибке
      */
     public SchoolCard getSchoolInfo() throws IOException {
-        return this.objectMapper.readValue(this.getJsonSchoolInfo(), SchoolCard.class);
-    }
-
-    /**
-     * Returns active sessions
-     * @return JSON String
-     * @throws IOException When an IO exception occurred
-     */
-    public String getJsonActiveSessions() throws IOException {
-        try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.ACTIVE_SESSIONS)) {
-            return this.objectMapper.readTree(response.getEntity().getContent()).toString();
+        try(CloseableHttpResponse response = this.client.get(String.format(Urls.WebApi.SCHOOL_INFO, this.school.id))) {
+            return this.objectMapper.readValue(response.getEntity().getContent(), SchoolCard.class);
         }
     }
 
     /**
-     * Returns active sessions
-     * @return Array of UserSession objects
-     * @throws IOException When an IO exception occurred
+     * Возвращает активные сессии
+     *
+     * @return Список объектов UserSession
+     * @throws IOException При IO ошибке
      */
-    public UserSession[] getActiveSessions() throws IOException {
-        return this.objectMapper.readValue(this.getJsonActiveSessions(), UserSession[].class);
+    public List<UserSession> getActiveSessions() throws IOException {
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.ACTIVE_SESSIONS)) {
+            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), UserSession[].class));
+        }
     }
 
     /**
-     * Logs out from the system
+     * Выполняет выход из системы
      */
     public void logout() {
         try {
-            try(CloseableHttpResponse response = this.client.get(NetSchoolAPI.LOGOUT)) {
+            try(CloseableHttpResponse response = this.client.get(Urls.WebApi.LOGOUT)) {
                 if(response.getStatusLine().getStatusCode() == 401) { //unauthorized
-                    //todo add something here
+                    System.out.println("Unauthorized or already logged out");
+                    return;
+                }
+                Scanner sc = new Scanner(response.getEntity().getContent());
+                while(sc.hasNextLine()) {
+                    System.out.println(sc.nextLine());
                 }
             }
         } catch (IOException e) {
@@ -335,6 +346,7 @@ public class NetSchoolAPI implements Closeable {
 
     /**
      * Closes this object
+     *
      * @throws IOException When an IO exception occurred
      */
     @Override
