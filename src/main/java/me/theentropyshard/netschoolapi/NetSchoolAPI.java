@@ -212,8 +212,7 @@ public class NetSchoolAPI implements Closeable {
         query = query + "jtSorting=" + type.VALUE;
 
         try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.GET_MESSAGES + query, new StringEntity(""))) {
-            JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
-            return this.objectMapper.readValue(node.toString(), Mail.class);
+            return this.objectMapper.readValue(response.getEntity().getContent(), Mail.class);
         }
     }
 
