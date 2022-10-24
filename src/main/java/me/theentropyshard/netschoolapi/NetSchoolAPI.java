@@ -22,6 +22,7 @@ import me.theentropyshard.netschoolapi.jsonstubs.AuthDataStub;
 import me.theentropyshard.netschoolapi.jsonstubs.GetDataStub;
 import me.theentropyshard.netschoolapi.jsonstubs.SchoolStub;
 import me.theentropyshard.netschoolapi.mail.schemas.Mail;
+import me.theentropyshard.netschoolapi.mail.schemas.MailBoxIds;
 import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
 import me.theentropyshard.netschoolapi.reports.schemas.ReportsGroup;
 import me.theentropyshard.netschoolapi.reports.schemas.StudentGrades;
@@ -203,6 +204,15 @@ public class NetSchoolAPI implements Closeable {
 
     //TODO implement receiving reports
 
+    /**
+     * Возвращает все письма по данным параметрам
+     * @param boxId Id почтового ящика, {@link MailBoxIds}
+     * @param startIndex Письмо, с которого начинать
+     * @param pageSize Количество писем в одном объекте Mail
+     * @param type Тип сортировки, один вариант
+     * @return Объект Mail
+     * @throws IOException При IO ошибке
+     */
     public Mail getMail(int boxId, int startIndex, int pageSize, SortingType type) throws IOException {
         String query = "?";
         query = query + "AT=" + this.at + "&";
@@ -213,6 +223,29 @@ public class NetSchoolAPI implements Closeable {
 
         try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.GET_MESSAGES + query, new StringEntity(""))) {
             return this.objectMapper.readValue(response.getEntity().getContent(), Mail.class);
+        }
+    }
+
+    public void sendMail() {
+
+    }
+
+    /**
+     * Удаляет письмо по Id
+     * @param boxId Id почтового ящика, {@link MailBoxIds}
+     * @param messageId Id письма
+     * @throws IOException При IO ошибке
+     */
+    public void deleteMail(int boxId, int messageId) throws IOException {
+        String data = "AT=" + this.at + "&nBoxId=" + boxId + "&deletedMessages=" + messageId + "&setWasSaved=true";
+        StringEntity content = new StringEntity(data);
+        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.DELETE_MESSAGES, content);
+            Scanner scanner = new Scanner(response.getEntity().getContent())) {
+            if(response.getStatusLine().getStatusCode() != 200) {
+                StringBuilder builder = new StringBuilder();
+                while(scanner.hasNextLine()) builder.append(scanner.nextLine());
+                throw new IOException(builder.toString());
+            }
         }
     }
 

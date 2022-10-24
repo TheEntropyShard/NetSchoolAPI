@@ -51,5 +51,6 @@ public final class Urls {
         private Asp() {}
 
         public static final String GET_MESSAGES = "/asp/ajax/GetMessagesAjax.asp";
+        public static final String DELETE_MESSAGES = "/asp/ajax/DeleteMessagesAjax.asp";
     }
 }

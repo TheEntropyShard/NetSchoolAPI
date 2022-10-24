@@ -1,4 +1,6 @@
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
+import me.theentropyshard.netschoolapi.mail.schemas.Mail;
+import me.theentropyshard.netschoolapi.mail.schemas.MailBoxIds;
 import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
 import me.theentropyshard.netschoolapi.schemas.Attachment;
 
@@ -25,10 +27,13 @@ public class Test {
             //List<Attachment> attachments = netschool.getAttachments(netschool.getDiary("2022-10-3", "2022-10-9"));
             //System.out.println(attachments);
             //System.out.println(netschool.getMail(1, 0, 100, SortingType.SORT_DESC));
-            System.out.println(netschool.getAvailableReports());
+            /*System.out.println(netschool.getAvailableReports());
             System.out.println();
-            System.out.println(netschool.getStudentGradesById(netschool.getAvailableReports().get(0).reports[0].id));
-            //System.out.println(netschool.getStudentGradesById(netschool.getAvailableReports().get(0).reports[0].id));
+            System.out.println(netschool.getStudentGradesById(netschool.getAvailableReports().get(0).reports[0].id));*/
+            Mail mail = netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC);
+            System.out.println(mail);
+            netschool.deleteMail(MailBoxIds.BOX_INCOMING, mail.Records[2].MessageId);
+            System.out.println(netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
