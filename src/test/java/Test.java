@@ -30,10 +30,15 @@ public class Test {
             /*System.out.println(netschool.getAvailableReports());
             System.out.println();
             System.out.println(netschool.getStudentGradesById(netschool.getAvailableReports().get(0).reports[0].id));*/
-            Mail mail = netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC);
+            /*Mail mail = netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC);
             System.out.println(mail);
-            netschool.deleteMail(MailBoxIds.BOX_INCOMING, mail.Records[2].MessageId);
-            System.out.println(netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC));
+            System.out.println();
+            System.out.println(netschool.readMail(mail.Records[0].MessageId));*/
+            //netschool.deleteMail(MailBoxIds.BOX_INCOMING, mail.Records[2].MessageId);
+            //System.out.println(netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC));
+            /*System.out.println(netschool.getAssignmentTypes(false));
+            System.out.println();
+            System.out.println(netschool.getAssignmentTypes(true));*/
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

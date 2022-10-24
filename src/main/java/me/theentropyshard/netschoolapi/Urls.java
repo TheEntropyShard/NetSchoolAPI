@@ -29,6 +29,7 @@ public final class Urls {
     public static final class WebApi {
         private WebApi() {}
 
+        public static final String LOGIN_DATA = "logindata";
         public static final String GET_DATA = "auth/getdata";
         public static final String LOGIN = "login";
         public static final String SCHOOLS_DATABASE = "addresses/schools";
@@ -42,6 +43,8 @@ public final class Urls {
         public static final String ACTIVE_SESSIONS = "context/activeSessions";
         public static final String GET_ATTACHMENTS = "student/diary/get-attachments";
         public static final String ATTACHMENTS_DOWNLOAD = "attachments/%d";
+        public static final String ASSIGNMENT_TYPES = "grade/assignment/types?all=";
+        public static final String UPLOAD_LIMITS = "attachments/uploadLimits";
     }
 
     /**
@@ -52,5 +55,6 @@ public final class Urls {
 
         public static final String GET_MESSAGES = "/asp/ajax/GetMessagesAjax.asp";
         public static final String DELETE_MESSAGES = "/asp/ajax/DeleteMessagesAjax.asp";
+        public static final String READ_MESSAGE = "/asp/messages/readmessage.asp";
     }
 }

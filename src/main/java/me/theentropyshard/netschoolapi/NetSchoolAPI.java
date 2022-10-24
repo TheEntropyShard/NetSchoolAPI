@@ -226,8 +226,36 @@ public class NetSchoolAPI implements Closeable {
         }
     }
 
-    public void sendMail() {
+    public void sendMail(String subject, String mainText) {
+        //BO - MAIN TEXT
+        //ATO - RECEIVERS
+        //SU - SUBJECT
 
+        //TODO
+    }
+
+    /**
+     * Возвращает HTML, в котором содержится вся информация о письме
+     * @param messageId Id письма
+     * @return HTML Строка
+     * @throws IOException При IO ошибке
+     */
+    public String readMail(int messageId) throws IOException {
+        String query = "?";
+        query = query + "ver=" + this.ver + "&";
+        query = query + "at=" + this.at + "&";
+        query = query + "MID=" + messageId + "&";
+        query = query + "MBID=1";
+
+        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.READ_MESSAGE + query, new StringEntity(""));
+            Scanner scanner = new Scanner(response.getEntity().getContent())) {
+            StringBuilder builder = new StringBuilder();
+            while(scanner.hasNextLine()) {
+                builder.append(scanner.nextLine());
+            }
+            //TODO use Jsoup to parse html
+            return builder.toString();
+        }
     }
 
     /**
@@ -246,6 +274,12 @@ public class NetSchoolAPI implements Closeable {
                 while(scanner.hasNextLine()) builder.append(scanner.nextLine());
                 throw new IOException(builder.toString());
             }
+        }
+    }
+
+    public List<AssignmentType> getAssignmentTypes(boolean all) throws IOException {
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.ASSIGNMENT_TYPES + all)) {
+            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), AssignmentType[].class));
         }
     }
 
