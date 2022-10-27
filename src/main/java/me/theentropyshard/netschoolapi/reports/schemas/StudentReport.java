@@ -19,7 +19,7 @@ package me.theentropyshard.netschoolapi.reports.schemas;
 
 import java.util.Arrays;
 
-public class StudentGrades {
+public class StudentReport {
     public Report report;
     public FilterSource[] filterSources;
 

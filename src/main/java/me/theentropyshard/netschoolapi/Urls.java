@@ -21,13 +21,17 @@ package me.theentropyshard.netschoolapi;
  * Класс, содержащий все используемые URLы
  */
 public final class Urls {
-    private Urls() {}
+    private Urls() {
+        throw new UnsupportedOperationException("Class Urls should not be instantiated");
+    }
 
     /**
      * WebApi urls
      */
     public static final class WebApi {
-        private WebApi() {}
+        private WebApi() {
+            throw new UnsupportedOperationException("Class WebApi should not be instantiated");
+        }
 
         public static final String LOGIN_DATA = "logindata";
         public static final String GET_DATA = "auth/getdata";
@@ -45,16 +49,26 @@ public final class Urls {
         public static final String ATTACHMENTS_DOWNLOAD = "attachments/%d";
         public static final String ASSIGNMENT_TYPES = "grade/assignment/types?all=";
         public static final String UPLOAD_LIMITS = "attachments/uploadLimits";
+        public static final String REPORTS_STUDENTTOTAL = "reports/studenttotal";
     }
 
     /**
      * Asp urls
      */
     public static final class Asp {
-        private Asp() {}
+        private Asp() {
+            throw new UnsupportedOperationException("Class Asp should not be instantiated");
+        }
 
         public static final String GET_MESSAGES = "/asp/ajax/GetMessagesAjax.asp";
         public static final String DELETE_MESSAGES = "/asp/ajax/DeleteMessagesAjax.asp";
         public static final String READ_MESSAGE = "/asp/messages/readmessage.asp";
+        //public static final String SEND_MESSAGE = "/asp/ajax/SendMessagesAjax.asp";//не найден урл
+
+        public static final String REPORT_STUDENT_TOTAL_MARKS = "/asp/Reports/ReportStudentTotalMarks.asp";
+        public static final String STUDENT_TOTAL_MARKS = "/asp/Reports/StudentTotalMarks.asp";
+
+        public static final String REPORT_PARENT_INFO_LETTER = "/asp/Reports/ReportParentInfoLetter.asp";
+        public static final String PARENT_INFO_LETTER = "/asp/Reports/ParentInfoLetter.asp";
     }
 }

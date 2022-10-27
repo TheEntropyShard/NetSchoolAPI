@@ -25,7 +25,7 @@ import me.theentropyshard.netschoolapi.mail.schemas.Mail;
 import me.theentropyshard.netschoolapi.mail.schemas.MailBoxIds;
 import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
 import me.theentropyshard.netschoolapi.reports.schemas.ReportsGroup;
-import me.theentropyshard.netschoolapi.reports.schemas.StudentGrades;
+import me.theentropyshard.netschoolapi.reports.schemas.StudentReport;
 import me.theentropyshard.netschoolapi.schemas.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.StringEntity;
@@ -53,8 +53,9 @@ public class NetSchoolAPI implements Closeable {
     private final HttpClientWrapper client;
     private final ObjectMapper objectMapper;
 
-    private int studentId;
     private int yearId;
+    private int studentId;
+    private String classId;
     private String ver;
     private String at;
     private SchoolStub school;
@@ -121,7 +122,6 @@ public class NetSchoolAPI implements Closeable {
 
             try(CloseableHttpResponse response = this.client.post(Urls.WebApi.LOGIN, content)) {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
-                System.out.println(node);
                 String at = node.get("at").textValue();
                 this.at = at;
                 this.client.addHeader(new BasicHeader("at", at));
@@ -137,6 +137,8 @@ public class NetSchoolAPI implements Closeable {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
                 this.yearId = node.get("id").intValue();
             }
+
+            this.classId = this.getPeriod().filterSources[1].items[0].title;
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -166,12 +168,15 @@ public class NetSchoolAPI implements Closeable {
         if(weekStart == null) weekStart = Utils.getCurrentWeekStart();
         if(weekEnd == null) weekEnd = Utils.getCurrentWeekEnd();
 
-        String query = String.format(
-                "?studentId=%d&yearId=%d&weekStart=%s&weekEnd=%s&withLaAssigns=true",
-                this.studentId,
-                this.yearId,
-                weekStart,
-                weekEnd
+        String query = Utils.toFormUrlEncoded(
+                Arrays.asList(
+                        "studentId", "yearId",
+                        "weekStart", "weekEnd"
+                ),
+                Arrays.asList(
+                       this.studentId, this.yearId,
+                       weekStart, weekEnd
+                )
         );
 
         try(CloseableHttpResponse response = this.client.get(Urls.WebApi.DIARY + query)) {
@@ -198,11 +203,9 @@ public class NetSchoolAPI implements Closeable {
      * @return Объект StudentGrades
      * @throws IOException При IO ошибке
      */
-    public StudentGrades getStudentGradesById(String id) throws IOException {
+    public StudentReport getStudentGradesById(String id) throws IOException {
         return null;
     }
-
-    //TODO implement receiving reports
 
     /**
      * Возвращает все письма по данным параметрам
@@ -214,24 +217,126 @@ public class NetSchoolAPI implements Closeable {
      * @throws IOException При IO ошибке
      */
     public Mail getMail(int boxId, int startIndex, int pageSize, SortingType type) throws IOException {
-        String query = "?";
-        query = query + "AT=" + this.at + "&";
-        query = query + "nBoxID=" + boxId + "&";
-        query = query + "jtStartIndex=" + startIndex + "&";
-        query = query + "jtPageSize=" + pageSize + "&";
-        query = query + "jtSorting=" + type.VALUE;
+        String query = "?" + Utils.toFormUrlEncoded(
+                Arrays.asList("AT", "nBoxId", "jtStartIndex", "jtPageSize", "jtSorting"),
+                Arrays.asList(this.at, boxId, startIndex, pageSize, type.VALUE)
+        );
 
         try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.GET_MESSAGES + query, new StringEntity(""))) {
             return this.objectMapper.readValue(response.getEntity().getContent(), Mail.class);
         }
     }
 
-    public void sendMail(String subject, String mainText) {
+    public void sendMail(String subject, String mainText, String receiver, boolean readNotification) throws IOException {
         //BO - MAIN TEXT
         //ATO - RECEIVERS
         //SU - SUBJECT
 
+        String data = Utils.toFormUrlEncoded(
+                Arrays.asList(
+                        "ATO", "SU", "NEEDNOTIFY", "BO", "MBID", "DMID"
+                ),
+                Arrays.asList(
+                        receiver, subject, readNotification ? 1 : 0,
+                        mainText, 3, ""
+                )
+        );
+
+        String query = "?" + Utils.toFormUrlEncoded(
+                Arrays.asList("ver", "at"),
+                Arrays.asList(this.ver, this.at)
+        );
+
+        /*try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.SEND_MESSAGE + query, new StringEntity(data))) {
+            *//*JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
+            System.out.println(node);*//*
+            System.out.println(Utils.readAllLines(response.getEntity().getContent()));
+        }*/
         //TODO
+    }
+
+    /**
+     * Возвращает Period
+     * @return Объект StudentReport
+     * @throws IOException При IO ошибке
+     */
+    public StudentReport getPeriod() throws IOException {
+        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.REPORTS_STUDENTTOTAL)) {
+            return this.objectMapper.readValue(response.getEntity().getContent(), StudentReport.class);
+        }
+    }
+
+    /**
+     * Возвращает HTML, в котором содержатся итоговые оценки
+     * @return HTML Строка
+     * @throws IOException При IO ошибке
+     */
+    public String getTotalMarks() throws IOException {
+        String data = Utils.toFormUrlEncoded(
+                Arrays.asList("AT", "VER", "RPNAME", "RPTID"),
+                Arrays.asList(this.at, this.ver, "Итоговые отметки", "StudentTotalMarks")
+        );
+
+        this.client.post(this.baseUrl + Urls.Asp.REPORT_STUDENT_TOTAL_MARKS, new StringEntity(data));
+
+        String data2 = Utils.toFormUrlEncoded(
+                Arrays.asList("AT", "VER", "LoginType", "RPTID", "SID"),
+                Arrays.asList(this.at, this.ver, 0, "StudentTotalMarks", this.studentId)
+        );
+
+        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.STUDENT_TOTAL_MARKS, new StringEntity(data2))) {
+            return Utils.readAsOneLine(response.getEntity().getContent());
+        }
+    }
+
+    /**
+     * Возвращает HTML, в котором содержится информационное письмо для родителей
+     * @return HTML Строка
+     * @throws IOException При IO ошибке
+     */
+    public String getParentInfoLetter() throws IOException {
+        String data = Utils.toFormUrlEncoded(
+                Arrays.asList("AT", "VER", "RPNAME", "RPTID"),
+                Arrays.asList(this.at, this.ver, "Информационное письмо для родителей", "ParentInfoLetter")
+        );
+
+        this.client.post(this.baseUrl + Urls.Asp.REPORT_PARENT_INFO_LETTER, new StringEntity(data));
+
+        String data2 = Utils.toFormUrlEncoded(
+                Arrays.asList(
+                        "AT", "ver", "LoginType",
+                        "RPTID", "SID", "ReportType",
+                        "PCLID", "TERMID"
+                ),
+                Arrays.asList(
+                        this.at, this.ver, 0,
+                        "ParentInfoLetter",this.studentId,
+                        2, this.classId, this.getTermId(1)
+                )
+        );
+
+        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.PARENT_INFO_LETTER, new StringEntity(data2))) {
+            return Utils.readAsOneLine(response.getEntity().getContent());
+        }
+    }
+
+    /**
+     * Возвращает Id четверти по ее номеру (1, 2, 3, 4)
+     * @param term Номер четверти
+     * @return Id четветрти
+     * @throws IOException При IO ошибке
+     */
+    public int getTermId(int term) throws IOException {
+        if(term < 1) term = 0;
+        
+        String data = Utils.toFormUrlEncoded(
+                Arrays.asList("AT", "VER", "RPNAME", "RPTID"),
+                Arrays.asList(this.at, this.ver, "Информационное письмо для родителей", "ParentInfoLetter")
+        );
+
+        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.REPORT_PARENT_INFO_LETTER, new StringEntity(data))) {
+            return HtmlParser.parseTermId(response.getEntity().getContent()).get(term - 1);
+        }
     }
 
     /**
@@ -241,11 +346,10 @@ public class NetSchoolAPI implements Closeable {
      * @throws IOException При IO ошибке
      */
     public String readMail(int messageId) throws IOException {
-        String query = "?";
-        query = query + "ver=" + this.ver + "&";
-        query = query + "at=" + this.at + "&";
-        query = query + "MID=" + messageId + "&";
-        query = query + "MBID=1";
+        String query = "?" + Utils.toFormUrlEncoded(
+                Arrays.asList("ver", "at", "MID", "MBID"),
+                Arrays.asList(this.ver, this.at, messageId, 1)
+        );
 
         try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.READ_MESSAGE + query, new StringEntity(""));
             Scanner scanner = new Scanner(response.getEntity().getContent())) {
@@ -265,7 +369,10 @@ public class NetSchoolAPI implements Closeable {
      * @throws IOException При IO ошибке
      */
     public void deleteMail(int boxId, int messageId) throws IOException {
-        String data = "AT=" + this.at + "&nBoxId=" + boxId + "&deletedMessages=" + messageId + "&setWasSaved=true";
+        String data = Utils.toFormUrlEncoded(
+                Arrays.asList("AT", "nBoxId", "deletedMessages", "setWasSaved"),
+                Arrays.asList(this.at, boxId, messageId, true)
+        );
         StringEntity content = new StringEntity(data);
         try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.DELETE_MESSAGES, content);
             Scanner scanner = new Scanner(response.getEntity().getContent())) {
@@ -353,12 +460,15 @@ public class NetSchoolAPI implements Closeable {
         if(weekStart == null) weekStart = Utils.getCurrentWeekStart();
         if(weekEnd == null) weekEnd = Utils.getCurrentWeekEnd();
 
-        String query = String.format(
-                "?studentId=%d&yearId=%d&weekStart=%s&weekEnd=%s",
-                this.studentId,
-                this.yearId,
-                weekStart,
-                weekEnd
+        String query = "?" + Utils.toFormUrlEncoded(
+                Arrays.asList(
+                        "studentId", "yearId",
+                        "weekStart", "weekEnd"
+                ),
+                Arrays.asList(
+                        this.studentId, this.yearId,
+                        weekStart, weekEnd
+                )
         );
 
         try(CloseableHttpResponse response = this.client.get(Urls.WebApi.OVERDUE + query)) {
@@ -405,6 +515,8 @@ public class NetSchoolAPI implements Closeable {
                     System.out.println(sc.nextLine());
                 }
             }
+
+            this.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -421,9 +533,20 @@ public class NetSchoolAPI implements Closeable {
     }
 
     private String getRequestBody(AuthDataStub ado) {
-        return String.format("LoginType=1&cid=%d&sid=%d&pid=%d&cn=%d&sft=%d&scid=%d&UN=%s&PW=%s&lt=%d&pw2=%s&ver=%d",
-                this.school.countryId, this.school.stateId, this.school.municipalityDistrictId,
-                this.school.cityId, this.school.funcType, this.school.id, Utils.urlEncode(this.username, "UTF-8"),
-                ado.pw, ado.lt, ado.pw2, ado.ver);
+        return Utils.toFormUrlEncoded(
+                Arrays.asList(
+                        "LoginType", "cid", "sid",
+                        "pid", "cn", "sft", "scid",
+                        "UN", "PW", "lt", "pw2", "ver"
+                ),
+                Arrays.asList(
+                        1,
+                        this.school.countryId, this.school.stateId,
+                        this.school.municipalityDistrictId,
+                        this.school.cityId, this.school.funcType, this.school.id,
+                        Utils.urlEncode(this.username, "UTF-8"),
+                        ado.pw, ado.lt, ado.pw2, ado.ver
+                )
+        );
     }
 }

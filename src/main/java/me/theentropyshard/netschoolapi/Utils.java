@@ -17,17 +17,17 @@
 
 package me.theentropyshard.netschoolapi;
 
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.DayOfWeek;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAdjusters;
-import java.time.temporal.TemporalField;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * Various utils used around the code
@@ -96,5 +96,48 @@ public final class Utils {
      */
     public static boolean validateArray(Object[] array) {
         return array != null && array.length != 0;
+    }
+
+    public static String toFormUrlEncoded(List<String> params, List<Object> values) {
+        StringBuilder builder = new StringBuilder();
+        if(params.size() > values.size()) {
+            throw new IllegalArgumentException("Not enough values: params size is " + params.size() + ", while values size is " + values.size());
+        } else if(params.size() < values.size()) {
+            throw new IllegalArgumentException("Not enough params: params size is " + params.size() + ", while values size is " + values.size());
+        }
+
+        for(int i = 0; i < params.size(); i++) {
+            String param = params.get(i);
+            Object value = values.get(i);
+
+            builder.append(param);
+            builder.append("=");
+            builder.append(value);
+            builder.append("&");
+        }
+
+        builder.deleteCharAt(builder.length() - 1);
+
+        return builder.toString();
+    }
+
+    public static List<String> readAllLines(InputStream is) {
+        List<String> lines = new ArrayList<>();
+        Scanner sc = new Scanner(is);
+        while(sc.hasNextLine()) {
+            lines.add(sc.nextLine());
+        }
+        sc.close();
+        return lines;
+    }
+
+    public static String readAsOneLine(InputStream is) {
+        StringBuilder builder = new StringBuilder();
+        Scanner sc = new Scanner(is);
+        while(sc.hasNextLine()) {
+            builder.append(sc.nextLine());
+        }
+        sc.close();
+        return builder.toString();
     }
 }
