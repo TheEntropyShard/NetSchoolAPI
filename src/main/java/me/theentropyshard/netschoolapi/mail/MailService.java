@@ -30,7 +30,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 public class MailService {
     private final NetSchoolAPI api;
@@ -86,7 +89,7 @@ public class MailService {
             throw new IOException("AntiForgeryToken пуст. Невозможно отправить письмо");
         }
 
-        Map<String, Object> data = new LinkedHashMap<>();
+        Map<String, Object> data = new HashMap<>();
         data.put("LoginType", 0);
         data.put("AT", this.api.getAt());
         data.put("VER", this.api.getVer());

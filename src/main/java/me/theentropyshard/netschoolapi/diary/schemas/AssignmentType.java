@@ -1,4 +1,4 @@
-package me.theentropyshard.netschoolapi.schemas;
+package me.theentropyshard.netschoolapi.diary.schemas;
 
 public class AssignmentType {
     public String abbr;

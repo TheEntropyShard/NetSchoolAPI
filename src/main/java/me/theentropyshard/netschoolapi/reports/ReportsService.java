@@ -17,6 +17,15 @@
 
 package me.theentropyshard.netschoolapi.reports;
 
+import me.theentropyshard.netschoolapi.HttpClientWrapper;
+import me.theentropyshard.netschoolapi.NetSchoolAPI;
+
 public class ReportsService {
-    //TODO
+    private final NetSchoolAPI api;
+    private final HttpClientWrapper client;
+
+    public ReportsService(NetSchoolAPI api) {
+        this.api = api;
+        this.client = api.getClient();
+    }
 }

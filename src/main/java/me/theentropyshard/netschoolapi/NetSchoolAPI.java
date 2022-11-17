@@ -18,14 +18,16 @@ package me.theentropyshard.netschoolapi;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import me.theentropyshard.netschoolapi.diary.DiaryService;
+import me.theentropyshard.netschoolapi.diary.schemas.*;
 import me.theentropyshard.netschoolapi.mail.MailService;
 import me.theentropyshard.netschoolapi.mail.schemas.Mail;
 import me.theentropyshard.netschoolapi.mail.schemas.MailBox;
 import me.theentropyshard.netschoolapi.mail.schemas.Message;
 import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
+import me.theentropyshard.netschoolapi.reports.ReportsService;
 import me.theentropyshard.netschoolapi.reports.schemas.ReportsGroup;
 import me.theentropyshard.netschoolapi.reports.schemas.StudentReport;
-import me.theentropyshard.netschoolapi.schemas.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
@@ -50,6 +52,8 @@ public class NetSchoolAPI implements Closeable {
     private final ObjectMapper objectMapper;
 
     private final MailService mailService;
+    private final ReportsService reportsService;
+    private final DiaryService diaryService;
 
     private int yearId;
     private int studentId;
@@ -70,6 +74,8 @@ public class NetSchoolAPI implements Closeable {
         this.objectMapper = new ObjectMapper();
 
         this.mailService = new MailService(this);
+        this.reportsService = new ReportsService(this);
+        this.diaryService = new DiaryService(this);
     }
 
     private void findSchool() throws IOException {
@@ -169,23 +175,29 @@ public class NetSchoolAPI implements Closeable {
      * @throws IOException При IO ошибке
      */
     public Diary getDiary(String weekStart, String weekEnd) throws IOException {
-        if(weekStart == null) weekStart = Utils.getCurrentWeekStart();
-        if(weekEnd == null) weekEnd = Utils.getCurrentWeekEnd();
+        return this.diaryService.getDiary(weekStart, weekEnd);
+    }
 
-        String query = Utils.toFormUrlEncoded(
-                Arrays.asList(
-                        "studentId", "yearId",
-                        "weekStart", "weekEnd"
-                ),
-                Arrays.asList(
-                        this.studentId, this.yearId,
-                        weekStart, weekEnd
-                )
-        );
+    /**
+     * Возвращает пропущенные задания
+     *
+     * @param weekStart Начало недели в формате 2022-10-17
+     * @param weekEnd   Конец недели в формате 2022-10-17
+     * @return Список заданий
+     * @throws IOException При IO ошибке
+     */
+    public List<Assignment> getOverdueJobs(String weekStart, String weekEnd) throws IOException {
+        return this.diaryService.getOverdueJobs(weekStart, weekEnd);
+    }
 
-        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.DIARY + query)) {
-            return this.objectMapper.readValue(response.getEntity().getContent(), Diary.class);
-        }
+    /**
+     * Возвращает подробную информацию об уроке
+     * @param assignmentId Id урока
+     * @return Объект DetailedAssignment
+     * @throws IOException При IO ошибке
+     */
+    public DetailedAssignment getDetailedAssignment(int assignmentId) throws IOException {
+        return this.diaryService.getDetailedAssignment(assignmentId);
     }
 
     /**
@@ -270,7 +282,7 @@ public class NetSchoolAPI implements Closeable {
                 Arrays.asList(
                         this.at, this.ver, 0,
                         "ParentInfoLetter", this.studentId,
-                        2, this.classId, this.getTermId(1)
+                        2, this.classId, this.getTermId(Term.TERM_1)
                 )
         );
 
@@ -282,20 +294,18 @@ public class NetSchoolAPI implements Closeable {
     /**
      * Возвращает Id четверти по ее номеру (1, 2, 3, 4)
      *
-     * @param term Номер четверти
+     * @param term Номер четверти по {@link Term}
      * @return Id четветрти
      * @throws IOException При IO ошибке
      */
-    public int getTermId(int term) throws IOException {
-        if(term < 1) term = 0;
-
+    public int getTermId(Term term) throws IOException {
         String data = Utils.toFormUrlEncoded(
                 Arrays.asList("AT", "VER", "RPNAME", "RPTID"),
                 Arrays.asList(this.at, this.ver, "Информационное письмо для родителей", "ParentInfoLetter")
         );
 
         try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.REPORT_PARENT_INFO_LETTER, new StringEntity(data))) {
-            return HtmlParser.parseTermId(response.getEntity().getContent()).get(term - 1);
+            return HtmlParser.parseTermId(response.getEntity().getContent()).get(term.number);
         }
     }
 
@@ -346,6 +356,12 @@ public class NetSchoolAPI implements Closeable {
         this.mailService.deleteMessage(mailBox, messageId);
     }
 
+    /**
+     * Возвращает типы оценок
+     * @param all Все типы или нет
+     * @return Список типов оценок
+     * @throws IOException При IO ошибке
+     */
     public List<AssignmentType> getAssignmentTypes(boolean all) throws IOException {
         try(CloseableHttpResponse response = this.client.get(Urls.WebApi.ASSIGNMENT_TYPES + all)) {
             return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), AssignmentType[].class));
@@ -401,43 +417,6 @@ public class NetSchoolAPI implements Closeable {
         Files.copy(content, file.toPath());
     }
 
-    public String getGradesForSubject(String startDate, String endDate, int subjectId) throws IOException {
-
-        try(CloseableHttpResponse response = this.client.get("")) {
-
-        }
-
-        return "";
-    }
-
-    /**
-     * Возвращает пропущенные задания
-     *
-     * @param weekStart Начало недели в формате 2022-10-17
-     * @param weekEnd   Конец недели в формате 2022-10-17
-     * @return Список заданий
-     * @throws IOException При IO ошибке
-     */
-    public List<Assignment> getOverdueJobs(String weekStart, String weekEnd) throws IOException {
-        if(weekStart == null) weekStart = Utils.getCurrentWeekStart();
-        if(weekEnd == null) weekEnd = Utils.getCurrentWeekEnd();
-
-        String query = "?" + Utils.toFormUrlEncoded(
-                Arrays.asList(
-                        "studentId", "yearId",
-                        "weekStart", "weekEnd"
-                ),
-                Arrays.asList(
-                        this.studentId, this.yearId,
-                        weekStart, weekEnd
-                )
-        );
-
-        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.OVERDUE + query)) {
-            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), Assignment[].class));
-        }
-    }
-
     /**
      * Возвращает информацию о школе
      *
@@ -476,6 +455,7 @@ public class NetSchoolAPI implements Closeable {
                 while(sc.hasNextLine()) {
                     System.out.println(sc.nextLine());
                 }
+                sc.close();
             }
 
             this.close();

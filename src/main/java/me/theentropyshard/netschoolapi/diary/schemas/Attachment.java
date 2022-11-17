@@ -15,9 +15,21 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.schemas;
+package me.theentropyshard.netschoolapi.diary.schemas;
 
-//TODO i dont know what is this, in my case in json it is always empty
-public class LaAssign {
+public class Attachment {
+    public int id;
+    public String name;
+    public String originalFileName;
+    public String description;
 
+    @Override
+    public String toString() {
+        return "Attachment{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", originalFileName='" + originalFileName + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

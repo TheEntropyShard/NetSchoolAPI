@@ -38,11 +38,8 @@ public class Test {
             System.out.println();
             System.out.println(netschool.getAssignmentTypes(true));*/
             //System.out.println(netschool.getParentInfoLetter());
-            netschool.sendMessage(new Message(
-                    "Получатель",
-                    "Тема",
-                    "Текст"
-            ), false);
+            System.out.println(netschool.getDetailedAssignment(
+                    netschool.getDiary("2022-10-10", "2022-10-16").weekDays[0].lessons[3].assignments[0].id));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

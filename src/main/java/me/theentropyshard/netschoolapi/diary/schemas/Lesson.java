@@ -15,27 +15,35 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.schemas;
+package me.theentropyshard.netschoolapi.diary.schemas;
 
 import java.util.Arrays;
 
-public class Diary {
-    public String weekStart;
-    public String weekEnd;
-    public Day[] weekDays;
-    public LaAssign[] laAssigns;
-    public String termName;
-    public String className;
+public class Lesson {
+    public int classmeetingId;
+    public String day;
+    public int number;
+    public int relay;
+    public String room;
+    public String startTime;
+    public String endTime;
+    public String subjectName;
+    public Assignment[] assignments;
+    public boolean isEaLesson;
 
     @Override
     public String toString() {
-        return "Diary{" +
-                "weekStart='" + weekStart + '\'' +
-                ", weekEnd='" + weekEnd + '\'' +
-                ", weekDays=" + Arrays.toString(weekDays) +
-                ", laAssigns=" + Arrays.toString(laAssigns) +
-                ", termName='" + termName + '\'' +
-                ", className='" + className + '\'' +
+        return "Lesson{" +
+                "classmeetingId=" + classmeetingId +
+                ", day='" + day + '\'' +
+                ", number=" + number +
+                ", relay=" + relay +
+                ", room='" + room + '\'' +
+                ", startTime='" + startTime + '\'' +
+                ", endTime='" + endTime + '\'' +
+                ", subjectName='" + subjectName + '\'' +
+                ", assignments=" + Arrays.toString(assignments) +
+                ", isEaLesson=" + isEaLesson +
                 '}';
     }
 }

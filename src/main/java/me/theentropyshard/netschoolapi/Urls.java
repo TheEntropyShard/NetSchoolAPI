@@ -42,6 +42,7 @@ public final class Urls {
         public static final String ANNOUNCEMENTS = "announcements";
         public static final String DIARY_INIT = "student/diary/init";
         public static final String DIARY = "student/diary";
+        public static final String ASSIGNS = "student/diary/assigns";
         public static final String OVERDUE = "student/diary/pastMandatory";
         public static final String YEARS_CURRENT = "years/current";
         public static final String ACTIVE_SESSIONS = "context/activeSessions";
