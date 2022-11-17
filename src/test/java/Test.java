@@ -1,4 +1,8 @@
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
+import me.theentropyshard.netschoolapi.mail.schemas.Mail;
+import me.theentropyshard.netschoolapi.mail.schemas.MailBox;
+import me.theentropyshard.netschoolapi.mail.schemas.Message;
+import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,6 +38,11 @@ public class Test {
             System.out.println();
             System.out.println(netschool.getAssignmentTypes(true));*/
             //System.out.println(netschool.getParentInfoLetter());
+            netschool.sendMessage(new Message(
+                    "Получатель",
+                    "Тема",
+                    "Текст"
+            ), false);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -18,11 +18,10 @@ package me.theentropyshard.netschoolapi;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.theentropyshard.netschoolapi.jsonstubs.AuthDataStub;
-import me.theentropyshard.netschoolapi.jsonstubs.GetDataStub;
-import me.theentropyshard.netschoolapi.jsonstubs.SchoolStub;
+import me.theentropyshard.netschoolapi.mail.MailService;
 import me.theentropyshard.netschoolapi.mail.schemas.Mail;
-import me.theentropyshard.netschoolapi.mail.schemas.MailBoxIds;
+import me.theentropyshard.netschoolapi.mail.schemas.MailBox;
+import me.theentropyshard.netschoolapi.mail.schemas.Message;
 import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
 import me.theentropyshard.netschoolapi.reports.schemas.ReportsGroup;
 import me.theentropyshard.netschoolapi.reports.schemas.StudentReport;
@@ -37,10 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class NetSchoolAPI implements Closeable {
     public static final String REPORTS = "reports/";
@@ -52,6 +48,8 @@ public class NetSchoolAPI implements Closeable {
 
     private final HttpClientWrapper client;
     private final ObjectMapper objectMapper;
+
+    private final MailService mailService;
 
     private int yearId;
     private int studentId;
@@ -65,19 +63,20 @@ public class NetSchoolAPI implements Closeable {
         this.password = password;
         this.schoolName = schoolName;
 
-        this.baseUrl = baseUrl;
-
         if(baseUrl.charAt(baseUrl.length() - 1) == '/') baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        this.baseUrl = baseUrl;
 
         this.client = new HttpClientWrapper(baseUrl + "/webapi/");
         this.objectMapper = new ObjectMapper();
+
+        this.mailService = new MailService(this);
     }
 
-    private void getSchoolData() {
+    private void findSchool() throws IOException {
         try(CloseableHttpResponse response = this.client.get(Urls.WebApi.SCHOOLS_DATABASE)) {
             SchoolStub[] schoolStubs = this.objectMapper.readValue(response.getEntity().getContent(), SchoolStub[].class);
+            if(!Utils.validateArray(schoolStubs)) throw new RuntimeException("Школы не найдены");
             for(SchoolStub schoolStub : schoolStubs) {
-                if(schoolStub == null) break;
                 if(!schoolStub.name.equals(this.schoolName)) continue;
                 if(schoolStub.funcType != 2) {
                     throw new RuntimeException("Поддерживаются только общеобразовательные школы (тип функциональности = 2), у вас " + schoolStub.funcType);
@@ -85,27 +84,8 @@ public class NetSchoolAPI implements Closeable {
                 this.school = schoolStub;
                 return;
             }
-        } catch (IOException ignored) {
         }
         throw new RuntimeException("Не удалось найти школу \"" + this.schoolName + "\"");
-    }
-
-    private AuthDataStub getAuthData() {
-        try {
-            GetDataStub getDataObject;
-            try(CloseableHttpResponse response = this.client.post(Urls.WebApi.GET_DATA, new StringEntity(""))) {
-                getDataObject = objectMapper.readValue(response.getEntity().getContent(), GetDataStub.class);
-            }
-            String encodedPassword = Utils.md5(this.password.getBytes(Charset.forName("windows-1251")));
-            String pw2 = Utils.md5((getDataObject.salt + encodedPassword).getBytes(Charset.forName("UTF-8"))); //for android compatibility
-            if(pw2 == null) {
-                throw new RuntimeException("Не удалось хэшировать пароль");
-            }
-            String pw = pw2.substring(0, this.password.length());
-            return new AuthDataStub(pw, pw2, getDataObject.lt, getDataObject.ver);
-        } catch (IOException e) {
-            throw new RuntimeException("Не удалось получить данные для авторизации");
-        }
     }
 
     /**
@@ -113,14 +93,38 @@ public class NetSchoolAPI implements Closeable {
      */
     public void login() {
         try {
-            this.getSchoolData();
+            String salt;
+            String lt;
 
-            AuthDataStub ado = this.getAuthData();
-            this.ver = String.valueOf(ado.ver);
-            String requestString = this.getRequestBody(ado);
-            StringEntity content = new StringEntity(requestString);
+            try(CloseableHttpResponse response = this.client.post(Urls.WebApi.GET_DATA, new StringEntity(""))) {
+                JsonNode getDataNode = this.objectMapper.readTree(response.getEntity().getContent());
+                this.ver = getDataNode.get("ver").textValue();
+                salt = getDataNode.get("salt").textValue();
+                lt = getDataNode.get("lt").textValue();
+            }
 
-            try(CloseableHttpResponse response = this.client.post(Urls.WebApi.LOGIN, content)) {
+            String pw2 = Utils.md5((salt + Utils.md5(this.password.getBytes(Charset.forName("windows-1251")))).getBytes(Charset.forName("UTF-8")));
+            if(pw2 == null) {
+                throw new RuntimeException("Не удалось хэшировать пароль");
+            }
+
+            this.findSchool();
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("LoginType", 1);
+            data.put("cid", this.school.countryId);
+            data.put("sid", this.school.stateId);
+            data.put("pid", this.school.municipalityDistrictId);
+            data.put("cn", this.school.cityId);
+            data.put("sft", 2);
+            data.put("scid", this.school.id);
+            data.put("UN", Utils.urlEncode(this.username, "UTF-8"));
+            data.put("PW", pw2.substring(0, this.password.length()));
+            data.put("lt", lt);
+            data.put("pw2", pw2);
+            data.put("ver", this.ver);
+
+            try(CloseableHttpResponse response = this.client.post(Urls.WebApi.LOGIN, new StringEntity(Utils.toFormUrlEncoded(data)))) {
                 JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
                 String at = node.get("at").textValue();
                 this.at = at;
@@ -140,7 +144,7 @@ public class NetSchoolAPI implements Closeable {
 
             this.classId = this.getPeriod().filterSources[1].items[0].title;
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -174,8 +178,8 @@ public class NetSchoolAPI implements Closeable {
                         "weekStart", "weekEnd"
                 ),
                 Arrays.asList(
-                       this.studentId, this.yearId,
-                       weekStart, weekEnd
+                        this.studentId, this.yearId,
+                        weekStart, weekEnd
                 )
         );
 
@@ -208,55 +212,8 @@ public class NetSchoolAPI implements Closeable {
     }
 
     /**
-     * Возвращает все письма по данным параметрам
-     * @param boxId Id почтового ящика, {@link MailBoxIds}
-     * @param startIndex Письмо, с которого начинать
-     * @param pageSize Количество писем в одном объекте Mail
-     * @param type Тип сортировки, один вариант
-     * @return Объект Mail
-     * @throws IOException При IO ошибке
-     */
-    public Mail getMail(int boxId, int startIndex, int pageSize, SortingType type) throws IOException {
-        String query = "?" + Utils.toFormUrlEncoded(
-                Arrays.asList("AT", "nBoxId", "jtStartIndex", "jtPageSize", "jtSorting"),
-                Arrays.asList(this.at, boxId, startIndex, pageSize, type.VALUE)
-        );
-
-        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.GET_MESSAGES + query, new StringEntity(""))) {
-            return this.objectMapper.readValue(response.getEntity().getContent(), Mail.class);
-        }
-    }
-
-    public void sendMail(String subject, String mainText, String receiver, boolean readNotification) throws IOException {
-        //BO - MAIN TEXT
-        //ATO - RECEIVERS
-        //SU - SUBJECT
-
-        String data = Utils.toFormUrlEncoded(
-                Arrays.asList(
-                        "ATO", "SU", "NEEDNOTIFY", "BO", "MBID", "DMID"
-                ),
-                Arrays.asList(
-                        receiver, subject, readNotification ? 1 : 0,
-                        mainText, 3, ""
-                )
-        );
-
-        String query = "?" + Utils.toFormUrlEncoded(
-                Arrays.asList("ver", "at"),
-                Arrays.asList(this.ver, this.at)
-        );
-
-        /*try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.SEND_MESSAGE + query, new StringEntity(data))) {
-            *//*JsonNode node = this.objectMapper.readTree(response.getEntity().getContent());
-            System.out.println(node);*//*
-            System.out.println(Utils.readAllLines(response.getEntity().getContent()));
-        }*/
-        //TODO
-    }
-
-    /**
      * Возвращает Period
+     *
      * @return Объект StudentReport
      * @throws IOException При IO ошибке
      */
@@ -268,6 +225,7 @@ public class NetSchoolAPI implements Closeable {
 
     /**
      * Возвращает HTML, в котором содержатся итоговые оценки
+     *
      * @return HTML Строка
      * @throws IOException При IO ошибке
      */
@@ -291,6 +249,7 @@ public class NetSchoolAPI implements Closeable {
 
     /**
      * Возвращает HTML, в котором содержится информационное письмо для родителей
+     *
      * @return HTML Строка
      * @throws IOException При IO ошибке
      */
@@ -310,7 +269,7 @@ public class NetSchoolAPI implements Closeable {
                 ),
                 Arrays.asList(
                         this.at, this.ver, 0,
-                        "ParentInfoLetter",this.studentId,
+                        "ParentInfoLetter", this.studentId,
                         2, this.classId, this.getTermId(1)
                 )
         );
@@ -322,13 +281,14 @@ public class NetSchoolAPI implements Closeable {
 
     /**
      * Возвращает Id четверти по ее номеру (1, 2, 3, 4)
+     *
      * @param term Номер четверти
      * @return Id четветрти
      * @throws IOException При IO ошибке
      */
     public int getTermId(int term) throws IOException {
         if(term < 1) term = 0;
-        
+
         String data = Utils.toFormUrlEncoded(
                 Arrays.asList("AT", "VER", "RPNAME", "RPTID"),
                 Arrays.asList(this.at, this.ver, "Информационное письмо для родителей", "ParentInfoLetter")
@@ -340,48 +300,50 @@ public class NetSchoolAPI implements Closeable {
     }
 
     /**
-     * Возвращает HTML, в котором содержится вся информация о письме
-     * @param messageId Id письма
-     * @return HTML Строка
+     * Возвращает все письма по данным параметрам
+     *
+     * @param mailBox      Id почтового ящика, {@link MailBox}
+     * @param startIndex Письмо, с которого начинать
+     * @param pageSize   Количество писем в одном объекте Mail
+     * @param type       Тип сортировки, один вариант
+     * @return Объект Mail
      * @throws IOException При IO ошибке
      */
-    public String readMail(int messageId) throws IOException {
-        String query = "?" + Utils.toFormUrlEncoded(
-                Arrays.asList("ver", "at", "MID", "MBID"),
-                Arrays.asList(this.ver, this.at, messageId, 1)
-        );
+    public Mail getMail(MailBox mailBox, int startIndex, int pageSize, SortingType type) throws IOException {
+        return this.mailService.getMail(mailBox, startIndex, pageSize, type);
+    }
 
-        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.READ_MESSAGE + query, new StringEntity(""));
-            Scanner scanner = new Scanner(response.getEntity().getContent())) {
-            StringBuilder builder = new StringBuilder();
-            while(scanner.hasNextLine()) {
-                builder.append(scanner.nextLine());
-            }
-            //TODO use Jsoup to parse html
-            return builder.toString();
-        }
+    /**
+     * Отправляет письмо
+     *
+     * @param message Объект Message
+     * @param notify  Отправить ли письмо о прочтении
+     * @throws IOException при IO ошибке
+     */
+    public void sendMessage(Message message, boolean notify) throws IOException {
+        this.mailService.sendMessage(message, notify);
+    }
+
+    /**
+     * Возвращает объект Message
+     *
+     * @param messageId Id письма
+     * @return объект Message
+     * @throws IOException при IO ошибке
+     */
+    public Message readMessage(int messageId) throws IOException {
+        return this.mailService.readMessage(messageId);
     }
 
     /**
      * Удаляет письмо по Id
-     * @param boxId Id почтового ящика, {@link MailBoxIds}
+     *
+     * @param mailBox   Почтовый ящик
      * @param messageId Id письма
-     * @throws IOException При IO ошибке
+     * @throws IOException при IO ошибке
      */
-    public void deleteMail(int boxId, int messageId) throws IOException {
-        String data = Utils.toFormUrlEncoded(
-                Arrays.asList("AT", "nBoxId", "deletedMessages", "setWasSaved"),
-                Arrays.asList(this.at, boxId, messageId, true)
-        );
-        StringEntity content = new StringEntity(data);
-        try(CloseableHttpResponse response = this.client.post(this.baseUrl + Urls.Asp.DELETE_MESSAGES, content);
-            Scanner scanner = new Scanner(response.getEntity().getContent())) {
-            if(response.getStatusLine().getStatusCode() != 200) {
-                StringBuilder builder = new StringBuilder();
-                while(scanner.hasNextLine()) builder.append(scanner.nextLine());
-                throw new IOException(builder.toString());
-            }
-        }
+    public void deleteMessage(MailBox mailBox, int messageId) throws IOException {
+        this.mailService.deleteMessage(mailBox, messageId);
     }
 
     public List<AssignmentType> getAssignmentTypes(boolean all) throws IOException {
@@ -522,6 +484,34 @@ public class NetSchoolAPI implements Closeable {
         }
     }
 
+    public String getBaseUrl() {
+        return this.baseUrl;
+    }
+
+    public HttpClientWrapper getClient() {
+        return this.client;
+    }
+
+    public int getYearId() {
+        return this.yearId;
+    }
+
+    public int getStudentId() {
+        return this.studentId;
+    }
+
+    public String getClassId() {
+        return this.classId;
+    }
+
+    public String getVer() {
+        return this.ver;
+    }
+
+    public String getAt() {
+        return this.at;
+    }
+
     /**
      * Closes this object
      *
@@ -530,23 +520,5 @@ public class NetSchoolAPI implements Closeable {
     @Override
     public void close() throws IOException {
         this.client.close();
-    }
-
-    private String getRequestBody(AuthDataStub ado) {
-        return Utils.toFormUrlEncoded(
-                Arrays.asList(
-                        "LoginType", "cid", "sid",
-                        "pid", "cn", "sft", "scid",
-                        "UN", "PW", "lt", "pw2", "ver"
-                ),
-                Arrays.asList(
-                        1,
-                        this.school.countryId, this.school.stateId,
-                        this.school.municipalityDistrictId,
-                        this.school.cityId, this.school.funcType, this.school.id,
-                        Utils.urlEncode(this.username, "UTF-8"),
-                        ado.pw, ado.lt, ado.pw2, ado.ver
-                )
-        );
     }
 }

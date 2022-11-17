@@ -17,11 +17,25 @@
 
 package me.theentropyshard.netschoolapi.mail.schemas;
 
-public final class MailBoxIds {
-    private MailBoxIds() {}
+public class MailRecord {
+    public String FromEOName;
+    public String FromName;
+    public int MessageId;
+    public String Read;
+    public String Sent;
+    public String SentTo;
+    public String Subj;
 
-    public static final int BOX_INCOMING = 1;
-    public static final int BOX_DRAFTS = 2;
-    public static final int BOX_SENT = 3;
-    public static final int BOX_DELETED = 4;
+    @Override
+    public String toString() {
+        return "Message{" +
+                "FromEOName='" + FromEOName + '\'' +
+                ", FromName='" + FromName + '\'' +
+                ", MessageId=" + MessageId +
+                ", Read='" + Read + '\'' +
+                ", Sent='" + Sent + '\'' +
+                ", SentTo='" + SentTo + '\'' +
+                ", Subj='" + Subj + '\'' +
+                '}';
+    }
 }

@@ -25,9 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Various utils used around the code
@@ -118,6 +116,18 @@ public final class Utils {
 
         builder.deleteCharAt(builder.length() - 1);
 
+        return builder.toString();
+    }
+
+    public static String toFormUrlEncoded(Map<String, Object> data) {
+        StringBuilder builder = new StringBuilder();
+        for(Map.Entry<String, Object> entry : data.entrySet()) {
+            builder.append(entry.getKey());
+            builder.append("=");
+            builder.append(entry.getValue());
+            builder.append("&");
+        }
+        builder.deleteCharAt(builder.length() - 1);
         return builder.toString();
     }
 

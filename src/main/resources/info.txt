@@ -1,6 +1,0 @@
-cid - countryId
-sid - stateId
-pid - municipalityDistrictId
-cn - cityId
-sft - funcType (school function type)
-scid - id (school id)

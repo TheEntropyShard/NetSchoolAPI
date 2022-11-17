@@ -18,24 +18,57 @@
 package me.theentropyshard.netschoolapi.mail.schemas;
 
 public class Message {
-    public String FromEOName;
-    public String FromName;
-    public int MessageId;
-    public String Read;
-    public String Sent;
-    public String SentTo;
-    public String Subj;
+    public String sender;
+    public String receiver;
+    public String sentDate;
+    public String subject;
+    public String text;
+
+    /**
+     * Создает пустой объект Message
+     */
+    public Message() {
+
+    }
+
+    /**
+     * Создает объект Message инициализируя необходимы для отправки параметры
+     *
+     * @param receiver Получатель (адресат)
+     * @param subject  Тема письма
+     * @param text     Текст письма
+     */
+    public Message(String receiver, String subject, String text) {
+        this.receiver = receiver;
+        this.subject = subject;
+        this.text = text;
+    }
+
+    /**
+     * Создает объект Message инициализируя все параметры
+     *
+     * @param sender   Отправитель
+     * @param receiver Получатель
+     * @param sentDate Дата отправки
+     * @param subject  Тема письма
+     * @param text     Текст письма
+     */
+    public Message(String sender, String receiver, String sentDate, String subject, String text) {
+        this.sender = sender;
+        this.receiver = receiver;
+        this.sentDate = sentDate;
+        this.subject = subject;
+        this.text = text;
+    }
 
     @Override
     public String toString() {
         return "Message{" +
-                "FromEOName='" + FromEOName + '\'' +
-                ", FromName='" + FromName + '\'' +
-                ", MessageId=" + MessageId +
-                ", Read='" + Read + '\'' +
-                ", Sent='" + Sent + '\'' +
-                ", SentTo='" + SentTo + '\'' +
-                ", Subj='" + Subj + '\'' +
+                "sender='" + sender + '\'' +
+                ", receiver='" + receiver + '\'' +
+                ", sentDate='" + sentDate + '\'' +
+                ", subject='" + subject + '\'' +
+                ", text='" + text + '\'' +
                 '}';
     }
 }

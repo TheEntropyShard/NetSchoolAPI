@@ -15,28 +15,8 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.exceptions;
+package me.theentropyshard.netschoolapi.reports;
 
-/**
- * Thrown when the school was not found in the list by its name
- */
-public class SchoolNotFoundException extends RuntimeException {
-    public SchoolNotFoundException() {
-    }
-
-    public SchoolNotFoundException(String message) {
-        super(message);
-    }
-
-    public SchoolNotFoundException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public SchoolNotFoundException(Throwable cause) {
-        super(cause);
-    }
-
-    public SchoolNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
+public class ReportsService {
+    //TODO
 }

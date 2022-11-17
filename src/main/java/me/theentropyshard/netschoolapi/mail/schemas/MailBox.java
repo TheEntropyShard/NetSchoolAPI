@@ -17,21 +17,15 @@
 
 package me.theentropyshard.netschoolapi.mail.schemas;
 
-import java.util.Arrays;
+public enum MailBox {
+    BOX_INCOMING(1),
+    BOX_DRAFTS(2),
+    BOX_SENT(3),
+    BOX_DELETED(4);
 
-public class Mail {
-    public MailRecord[] Records;
-    public String Result;
-    public int ResultStatus;
-    public int TotalRecordCount;
+    public final int boxId;
 
-    @Override
-    public String toString() {
-        return "Mail{" +
-                "Records=" + Arrays.toString(Records) +
-                ", Result='" + Result + '\'' +
-                ", ResultStatus=" + ResultStatus +
-                ", TotalRecordCount=" + TotalRecordCount +
-                '}';
+    MailBox(int boxId) {
+        this.boxId = boxId;
     }
 }

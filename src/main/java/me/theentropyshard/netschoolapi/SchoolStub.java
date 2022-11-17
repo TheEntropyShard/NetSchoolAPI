@@ -15,7 +15,7 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.jsonstubs;
+package me.theentropyshard.netschoolapi;
 
 import java.util.Objects;
 

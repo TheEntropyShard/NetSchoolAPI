@@ -63,12 +63,34 @@ public final class Urls {
         public static final String GET_MESSAGES = "/asp/ajax/GetMessagesAjax.asp";
         public static final String DELETE_MESSAGES = "/asp/ajax/DeleteMessagesAjax.asp";
         public static final String READ_MESSAGE = "/asp/messages/readmessage.asp";
-        //public static final String SEND_MESSAGE = "/asp/ajax/SendMessagesAjax.asp";//не найден урл
+        public static final String SEND_MESSAGE = "/asp/messages/sendsavemsg.asp";
+        public static final String COMPOSE_MESSAGE = "/asp/Messages/composemessage.asp";
 
         public static final String REPORT_STUDENT_TOTAL_MARKS = "/asp/Reports/ReportStudentTotalMarks.asp";
         public static final String STUDENT_TOTAL_MARKS = "/asp/Reports/StudentTotalMarks.asp";
 
+        public static final String REPORT_STUDENT_AVERAGE_MARK = "/asp/Reports/ReportStudentAverageMark.asp";
+        public static final String STUDENT_AVERAGE_MARK = "/asp/Reports/StudentAverageMark.asp";
+
+        public static final String REPORT_STUDENT_AVERAGE_MARK_DYN = "/asp/Reports/ReportStudentAverageMarkDyn.asp";
+        public static final String STUDENT_AVERAGE_MARK_DYN = "/asp/Reports/StudentAverageMarkDyn.asp";
+
+        public static final String REPORT_STUDENT_GRADES = "/asp/Reports/ReportStudentGrades.asp";
+        public static final String STUDENT_GRADES = "/asp/Reports/StudentGrades.asp";
+
+        public static final String REPORT_STUDENT_TOTAL = "/asp/Reports/ReportStudentTotal.asp";
+        public static final String STUDENT_TOTAL = "/asp/Reports/StudentTotal.asp";
+
+        public static final String REPORT_STUDENT_ATTENDANCE_GRADES = "/asp/Reports/ReportStudentAttendanceGrades.asp";
+        public static final String STUDENT_ATTENDANCE_GRADES = "/asp/Reports/StudentAttendanceGrades.asp";
+
+        public static final String REPORT_JOURNAL_ACCESS = "/asp/Reports/ReportJournalAccess.asp";
+        public static final String JOURNAL_ACCESS = "/asp/Reports/JournalAccess.asp";
+
         public static final String REPORT_PARENT_INFO_LETTER = "/asp/Reports/ReportParentInfoLetter.asp";
         public static final String PARENT_INFO_LETTER = "/asp/Reports/ParentInfoLetter.asp";
+
+        public static final String REPORT_DOP_EDUC_STUDENT = "/asp/Reports/ReportDopEducStudent.asp";
+        public static final String DOP_EDUC_STUDENT = "/asp/Reports/DopEducStudent.asp";
     }
 }

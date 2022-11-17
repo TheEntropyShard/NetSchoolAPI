@@ -17,6 +17,7 @@
 
 package me.theentropyshard.netschoolapi;
 
+import me.theentropyshard.netschoolapi.mail.schemas.Message;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -45,5 +46,50 @@ public final class HtmlParser {
         return terms;
     }
 
+    public static Message parseMessage(String html) throws IOException {
+        Document doc = Jsoup.parse(html);
+        Element messageHeaders = doc.getElementById("message_headers");
+        Element messageBody = doc.getElementById("message_body");
 
+        if(messageHeaders == null) {
+            throw new IOException("Не удалось найти заголовки сообщения");
+        }
+
+        if(messageBody == null) {
+            throw new IOException("Не удалось найти текст сообщения");
+        }
+
+        Message message = new Message();
+
+        for(Element formGroup : messageHeaders.getElementsByClass("form-group")) {
+            Element label = formGroup.getElementsByClass("control-label col-md-4 col-lg-3 col-sm-4").get(0);
+            Element input = formGroup.getElementsByTag("input").get(0);
+            switch(label.text()) {
+                case "От кого":
+                    message.sender = input.attr("value");
+                    break;
+                case "Кому":
+                    message.receiver = input.attr("value");
+                    break;
+                case "Отправлено":
+                    message.sentDate = input.attr("value");
+                    break;
+            }
+        }
+
+        for(Element formGroup : messageBody.getElementsByClass("form-group")) {
+            Element label = formGroup.getElementsByClass("control-label ").get(0);
+            switch(label.text()) {
+                case "Тема":
+                    Element input = formGroup.getElementsByTag("input").get(0);
+                    message.subject = input.attr("value");
+                    break;
+                case "Текст":
+                    message.text = formGroup.text().substring(6);
+                    break;
+            }
+        }
+
+        return message;
+    }
 }
