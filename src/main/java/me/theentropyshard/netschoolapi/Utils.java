@@ -17,8 +17,11 @@
 
 package me.theentropyshard.netschoolapi;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -149,5 +152,15 @@ public final class Utils {
         }
         sc.close();
         return builder.toString();
+    }
+
+    public static IOException getError(InputStream is) {
+        try(Scanner scanner = new Scanner(is)) {
+            StringBuilder builder = new StringBuilder();
+            while(scanner.hasNextLine()) {
+                builder.append(scanner.nextLine());
+            }
+            return new IOException(builder.toString());
+        }
     }
 }

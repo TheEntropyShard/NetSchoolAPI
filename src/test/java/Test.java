@@ -9,7 +9,6 @@ import java.util.Map;
 
 public class Test {
     public static void main(String[] args) {
-        Map<String, String> env = System.getenv();
         NetSchoolAPI netschool = new NetSchoolAPI(
                 System.getenv("MAIN_DOMAIN"), // Адрес вашего электронного дневника, например https://giseo.rkomi.ru
                 System.getenv("USERNAME"), // Логин, например ПупкинВ
@@ -19,13 +18,13 @@ public class Test {
         netschool.login();
 
         try {
-            /*System.out.println(netschool.getAnnouncements());
-            System.out.println();
-            System.out.println(netschool.getJsonDiary("2022-10-3", "2022-10-9"));
-            List<Attachment> attachments = netschool.getAttachments(netschool.getDiary("2022-10-3", "2022-10-9"));
-            System.out.println(attachments);
-            System.out.println(netschool.getMail(1, 0, 100, SortingType.SORT_DESC));
-            System.out.println(netschool.getAvailableReports());
+            //System.out.println(netschool.getAnnouncements());
+            //System.out.println();
+            //System.out.println(netschool.getDiary("2022-10-3", "2022-10-9"));
+            //List<Attachment> attachments = netschool.getAttachments(netschool.getDiary("2022-10-3", "2022-10-9"));
+            //System.out.println(attachments);
+            //System.out.println(netschool.getMail(MailBox.BOX_INCOMING, 0, 10, SortingType.SORT_DESC));
+            /*System.out.println(netschool.getAvailableReports());
             System.out.println();
             System.out.println(netschool.getStudentGradesById(netschool.getAvailableReports().get(0).reports[0].id));
             Mail mail = netschool.getMail(MailBoxIds.BOX_INCOMING, 0, 10, SortingType.SORT_DESC);
@@ -38,8 +37,7 @@ public class Test {
             System.out.println();
             System.out.println(netschool.getAssignmentTypes(true));*/
             //System.out.println(netschool.getParentInfoLetter());
-            System.out.println(netschool.getDetailedAssignment(
-                    netschool.getDiary("2022-10-10", "2022-10-16").weekDays[0].lessons[3].assignments[0].id));
+            netschool.dos();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

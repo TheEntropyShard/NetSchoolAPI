@@ -18,20 +18,17 @@
 package me.theentropyshard.netschoolapi.diary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.theentropyshard.netschoolapi.HttpClientWrapper;
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
 import me.theentropyshard.netschoolapi.Urls;
 import me.theentropyshard.netschoolapi.Utils;
 import me.theentropyshard.netschoolapi.diary.schemas.Assignment;
 import me.theentropyshard.netschoolapi.diary.schemas.DetailedAssignment;
 import me.theentropyshard.netschoolapi.diary.schemas.Diary;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import me.theentropyshard.netschoolapi.http.HttpClientWrapper;
+import okhttp3.Response;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DiaryService {
     private final NetSchoolAPI api;
@@ -58,8 +55,8 @@ public class DiaryService {
 
         String query = "?" + Utils.toFormUrlEncoded(data);
 
-        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.DIARY + query)) {
-            return this.objectMapper.readValue(response.getEntity().getContent(), Diary.class);
+        try(Response response = this.client.get(Urls.WebApi.DIARY + query)) {
+            return this.objectMapper.readValue(Objects.requireNonNull(response.body()).byteStream(), Diary.class);
         }
     }
 
@@ -78,15 +75,15 @@ public class DiaryService {
                 )
         );
 
-        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.OVERDUE + query)) {
-            return Arrays.asList(this.objectMapper.readValue(response.getEntity().getContent(), Assignment[].class));
+        try(Response response = this.client.get(Urls.WebApi.OVERDUE + query)) {
+            return Arrays.asList(this.objectMapper.readValue(Objects.requireNonNull(response.body()).byteStream(), Assignment[].class));
         }
     }
 
     public DetailedAssignment getDetailedAssignment(int assignmentId) throws IOException {
         String query = "?studentId=" + this.api.getStudentId();
-        try(CloseableHttpResponse response = this.client.get(Urls.WebApi.ASSIGNS + "/" + assignmentId + query)) {
-            return this.objectMapper.readValue(response.getEntity().getContent(), DetailedAssignment.class);
+        try(Response response = this.client.get(Urls.WebApi.ASSIGNS + "/" + assignmentId + query)) {
+            return this.objectMapper.readValue(Objects.requireNonNull(response.body()).byteStream(), DetailedAssignment.class);
         }
     }
 }

@@ -15,29 +15,21 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.reports.schemas;
+package me.theentropyshard.netschoolapi.http;
 
-import java.util.Arrays;
+import okhttp3.MediaType;
 
-public class Report {
-    public String id;
-    public String name;
-    public String group;
-    public String level;
-    public int order;
-    public FilterPanel filterPanel;
-    public Object[] presentTypes;
+public enum ContentType {
+    JSON(MediaType.get("application/json; charset=utf-8")),
+    FORM_URLENCODED(MediaType.get("application/x-www-form-urlencoded; charset=utf-8"));
 
-    @Override
-    public String toString() {
-        return "Report{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", group='" + group + '\'' +
-                ", level='" + level + '\'' +
-                ", order=" + order +
-                ", filterPanel=" + filterPanel +
-                ", presentTypes=" + Arrays.toString(presentTypes) +
-                '}';
+    private final MediaType mediaType;
+
+    ContentType(MediaType mediaType) {
+        this.mediaType = mediaType;
+    }
+
+    public MediaType getMediaType() {
+        return this.mediaType;
     }
 }

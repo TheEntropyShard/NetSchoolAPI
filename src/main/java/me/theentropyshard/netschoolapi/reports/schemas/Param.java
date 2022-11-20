@@ -17,17 +17,15 @@
 
 package me.theentropyshard.netschoolapi.reports.schemas;
 
-import java.util.Arrays;
-
-public class StudentReport {
-    public Report report;
-    public FilterSource[] filterSources;
+public class Param {
+    public String name;
+    public String value;
 
     @Override
     public String toString() {
-        return "StudentGrades{" +
-                "report=" + report +
-                ", filterSources=" + Arrays.toString(filterSources) +
+        return "Param{" +
+                "name='" + name + '\'' +
+                ", value='" + value + '\'' +
                 '}';
     }
 }

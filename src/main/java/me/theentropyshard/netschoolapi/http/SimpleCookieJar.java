@@ -15,17 +15,31 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.reports.schemas;
+package me.theentropyshard.netschoolapi.http;
 
-public class Item {
-    public String title;
-    public String value;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class SimpleCookieJar implements CookieJar {
+    private final List<Cookie> cookies;
+
+    public SimpleCookieJar() {
+        this.cookies = new ArrayList<>();
+    }
+
+    @NotNull
+    @Override
+    public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
+        return this.cookies;
+    }
 
     @Override
-    public String toString() {
-        return "Item{" +
-                "title='" + title + '\'' +
-                ", value='" + value + '\'' +
-                '}';
+    public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> cookies) {
+        this.cookies.addAll(cookies);
     }
 }

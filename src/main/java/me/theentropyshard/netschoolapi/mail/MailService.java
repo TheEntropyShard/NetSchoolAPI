@@ -18,22 +18,24 @@
 package me.theentropyshard.netschoolapi.mail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import me.theentropyshard.netschoolapi.*;
+import me.theentropyshard.netschoolapi.HtmlParser;
+import me.theentropyshard.netschoolapi.NetSchoolAPI;
+import me.theentropyshard.netschoolapi.Urls;
+import me.theentropyshard.netschoolapi.Utils;
+import me.theentropyshard.netschoolapi.http.ContentType;
+import me.theentropyshard.netschoolapi.http.HttpClientWrapper;
 import me.theentropyshard.netschoolapi.mail.schemas.Mail;
 import me.theentropyshard.netschoolapi.mail.schemas.MailBox;
 import me.theentropyshard.netschoolapi.mail.schemas.Message;
 import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.entity.StringEntity;
+import okhttp3.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.io.InputStream;
+import java.util.*;
 
 public class MailService {
     private final NetSchoolAPI api;
@@ -52,8 +54,8 @@ public class MailService {
                 Arrays.asList(this.api.getAt(), mailBox.boxId, startIndex, pageSize, type.VALUE)
         );
 
-        try(CloseableHttpResponse response = this.client.post(this.api.getBaseUrl() + Urls.Asp.GET_MESSAGES + query, new StringEntity(""))) {
-            return this.objectMapper.readValue(response.getEntity().getContent(), Mail.class);
+        try(Response response = this.client.post(this.api.getBaseUrl() + Urls.Asp.GET_MESSAGES + query, "", ContentType.FORM_URLENCODED)) {
+            return this.objectMapper.readValue(Objects.requireNonNull(response.body()).byteStream(), Mail.class);
         }
     }
 
@@ -76,8 +78,8 @@ public class MailService {
                 Arrays.asList(this.api.getVer(), this.api.getAt())
         );
 
-        try(CloseableHttpResponse response = this.client.get(this.api.getBaseUrl() + Urls.Asp.COMPOSE_MESSAGE + query)) {
-            Document doc = Jsoup.parse(response.getEntity().getContent(), "UTF-8", "");
+        try(Response response = this.client.get(this.api.getBaseUrl() + Urls.Asp.COMPOSE_MESSAGE + query)) {
+            Document doc = Jsoup.parse(Objects.requireNonNull(response.body()).byteStream(), "UTF-8", "");
             for(Element input : doc.getElementsByTag("input")) {
                 if(input.attr("name").equals("AntiForgeryToken")) {
                     antiForgeryToken = input.attr("value");
@@ -115,13 +117,14 @@ public class MailService {
         data.put("NEEDNOTIFY", notify ? 1 : 0);
         data.put("BO", Utils.urlEncode(message.text.trim(), "UTF-8"));
 
-        try(CloseableHttpResponse response = this.client.post(this.api.getBaseUrl() + Urls.Asp.SEND_MESSAGE, new StringEntity(Utils.toFormUrlEncoded(data)));
-            Scanner scanner = new Scanner(response.getEntity().getContent())) {
-            if(response.getStatusLine().getStatusCode() != 200) {
-                StringBuilder builder = new StringBuilder();
-                while(scanner.hasNextLine()) builder.append(scanner.nextLine());
-                throw new IOException(builder.toString());
-            }
+        try(
+                Response response = this.client.post(
+                        this.api.getBaseUrl() + Urls.Asp.SEND_MESSAGE,
+                        Utils.toFormUrlEncoded(data),
+                        ContentType.FORM_URLENCODED
+                )
+        ) {
+            if(response.code() != 200) throw Utils.getError(Objects.requireNonNull(response.body()).byteStream());
         }
     }
 
@@ -132,11 +135,13 @@ public class MailService {
         );
 
         StringBuilder builder = new StringBuilder();
-        try(CloseableHttpResponse response = this.client.post(this.api.getBaseUrl() + Urls.Asp.READ_MESSAGE + query, new StringEntity(""));
-            Scanner scanner = new Scanner(response.getEntity().getContent())) {
-            while(scanner.hasNextLine()) {
-                builder.append(scanner.nextLine());
-            }
+        try(
+                Response response = this.client.post(this.api.getBaseUrl() + Urls.Asp.READ_MESSAGE + query, "", ContentType.FORM_URLENCODED);
+                InputStream is = Objects.requireNonNull(response.body()).byteStream();
+                Scanner scanner = new Scanner(is)
+        ) {
+            if(response.code() != 200) throw Utils.getError(is);
+            while(scanner.hasNextLine()) builder.append(scanner.nextLine());
         }
         return HtmlParser.parseMessage(builder.toString());
     }
@@ -146,13 +151,8 @@ public class MailService {
                 Arrays.asList("AT", "nBoxId", "deletedMessages", "setWasSaved"),
                 Arrays.asList(this.api.getAt(), mailBox.boxId, messageId, true)
         );
-        try(CloseableHttpResponse response = this.client.post(this.api.getBaseUrl() + Urls.Asp.DELETE_MESSAGES, new StringEntity(data));
-            Scanner scanner = new Scanner(response.getEntity().getContent())) {
-            if(response.getStatusLine().getStatusCode() != 200) {
-                StringBuilder builder = new StringBuilder();
-                while(scanner.hasNextLine()) builder.append(scanner.nextLine());
-                throw new IOException(builder.toString());
-            }
+        try(Response response = this.client.post(this.api.getBaseUrl() + Urls.Asp.READ_MESSAGE, data, ContentType.FORM_URLENCODED)) {
+            if(response.code() != 200) throw Utils.getError(Objects.requireNonNull(response.body()).byteStream());
         }
     }
 }

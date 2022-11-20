@@ -15,19 +15,18 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.reports.schemas;
+package me.theentropyshard.netschoolapi.reports;
 
-public class Dependency {
-    public RelatedObject relatedObject;
-    public Object relatedValue;
-    public String condition;
+import me.theentropyshard.netschoolapi.Urls;
 
-    @Override
-    public String toString() {
-        return "Dependency{" +
-                "relatedObject=" + relatedObject +
-                ", relatedValue=" + relatedValue +
-                ", condition='" + condition + '\'' +
-                '}';
+public enum ReportType {
+    STUDENT_TOTAL_MARKS(Urls.Asp.REPORT_STUDENT_TOTAL_MARKS, Urls.Asp.STUDENT_TOTAL_MARKS);
+
+    public final String reportUrl;
+    public final String url;
+
+    ReportType(String reportUrl, String url) {
+        this.reportUrl = reportUrl;
+        this.url = url;
     }
 }
