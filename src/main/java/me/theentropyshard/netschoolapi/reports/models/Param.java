@@ -15,21 +15,17 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.diary.schemas;
+package me.theentropyshard.netschoolapi.reports.models;
 
-public class Attachment {
-    public int id;
+public class Param {
     public String name;
-    public String originalFileName;
-    public String description;
+    public String value;
 
     @Override
     public String toString() {
-        return "Attachment{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", originalFileName='" + originalFileName + '\'' +
-                ", description='" + description + '\'' +
+        return "Param{" +
+                "name='" + name + '\'' +
+                ", value='" + value + '\'' +
                 '}';
     }
 }

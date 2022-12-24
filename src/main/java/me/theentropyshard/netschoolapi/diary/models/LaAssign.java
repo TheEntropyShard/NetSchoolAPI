@@ -15,7 +15,7 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.diary.schemas;
+package me.theentropyshard.netschoolapi.diary.models;
 
 //TODO i dont know what is this, in my case in json it is always empty
 public class LaAssign {

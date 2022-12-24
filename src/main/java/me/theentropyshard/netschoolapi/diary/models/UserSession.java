@@ -15,7 +15,7 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.diary.schemas;
+package me.theentropyshard.netschoolapi.diary.models;
 
 public class UserSession {
     public int schoolId;

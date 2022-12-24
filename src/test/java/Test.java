@@ -1,11 +1,4 @@
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
-import me.theentropyshard.netschoolapi.mail.schemas.Mail;
-import me.theentropyshard.netschoolapi.mail.schemas.MailBox;
-import me.theentropyshard.netschoolapi.mail.schemas.Message;
-import me.theentropyshard.netschoolapi.mail.schemas.SortingType;
-
-import java.io.IOException;
-import java.util.Map;
 
 public class Test {
     public static void main(String[] args) {

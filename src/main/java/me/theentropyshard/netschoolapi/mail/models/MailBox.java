@@ -15,7 +15,7 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.mail.schemas;
+package me.theentropyshard.netschoolapi.mail.models;
 
 public enum MailBox {
     BOX_INCOMING(1),

@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import me.theentropyshard.netschoolapi.NetSchoolAPI;
 import me.theentropyshard.netschoolapi.Urls;
 import me.theentropyshard.netschoolapi.Utils;
-import me.theentropyshard.netschoolapi.diary.schemas.Assignment;
-import me.theentropyshard.netschoolapi.diary.schemas.DetailedAssignment;
-import me.theentropyshard.netschoolapi.diary.schemas.Diary;
+import me.theentropyshard.netschoolapi.diary.models.Assignment;
+import me.theentropyshard.netschoolapi.diary.models.DetailedAssignment;
+import me.theentropyshard.netschoolapi.diary.models.Diary;
 import me.theentropyshard.netschoolapi.http.HttpClientWrapper;
 import okhttp3.Response;
 

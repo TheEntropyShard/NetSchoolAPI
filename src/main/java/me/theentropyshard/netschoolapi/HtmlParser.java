@@ -17,7 +17,7 @@
 
 package me.theentropyshard.netschoolapi;
 
-import me.theentropyshard.netschoolapi.mail.schemas.Message;
+import me.theentropyshard.netschoolapi.mail.models.Message;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

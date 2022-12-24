@@ -15,19 +15,27 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.reports.schemas;
+package me.theentropyshard.netschoolapi.diary.models;
 
 import java.util.Arrays;
 
-public class Filter {
-    public FilterData[] selectedData;
-    public Param[] params;
+public class Diary {
+    public String weekStart;
+    public String weekEnd;
+    public Day[] weekDays;
+    public LaAssign[] laAssigns;
+    public String termName;
+    public String className;
 
     @Override
     public String toString() {
-        return "Filter{" +
-                "selectedData=" + Arrays.toString(selectedData) +
-                ", params=" + Arrays.toString(params) +
+        return "Diary{" +
+                "weekStart='" + weekStart + '\'' +
+                ", weekEnd='" + weekEnd + '\'' +
+                ", weekDays=" + Arrays.toString(weekDays) +
+                ", laAssigns=" + Arrays.toString(laAssigns) +
+                ", termName='" + termName + '\'' +
+                ", className='" + className + '\'' +
                 '}';
     }
 }

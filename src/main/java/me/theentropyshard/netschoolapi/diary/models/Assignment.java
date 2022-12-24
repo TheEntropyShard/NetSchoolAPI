@@ -15,17 +15,34 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.reports.schemas;
+package me.theentropyshard.netschoolapi.diary.models;
 
-public class Param {
-    public String name;
-    public String value;
+public class Assignment {
+    public int id;
+    public int typeId;
+    public String assignmentName;
+    public int weight;
+    public String dueDate;
+    public int classMeetingId;
+    public Mark mark;
+
+    public static class Mark {
+        public int assignmentId;
+        public int studentId;
+        public int mark;
+        public String resultScore;
+        public boolean dutyMark;
+    }
 
     @Override
     public String toString() {
-        return "Param{" +
-                "name='" + name + '\'' +
-                ", value='" + value + '\'' +
+        return "Assignment{" +
+                "id=" + id +
+                ", typeId=" + typeId +
+                ", assignmentName='" + assignmentName + '\'' +
+                ", weight=" + weight +
+                ", dueDate='" + dueDate + '\'' +
+                ", classMeetingId=" + classMeetingId +
                 '}';
     }
 }

@@ -15,23 +15,19 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.mail.schemas;
+package me.theentropyshard.netschoolapi.reports.models;
 
 import java.util.Arrays;
 
-public class Mail {
-    public MailRecord[] Records;
-    public String Result;
-    public int ResultStatus;
-    public int TotalRecordCount;
+public class Filter {
+    public FilterData[] selectedData;
+    public Param[] params;
 
     @Override
     public String toString() {
-        return "Mail{" +
-                "Records=" + Arrays.toString(Records) +
-                ", Result='" + Result + '\'' +
-                ", ResultStatus=" + ResultStatus +
-                ", TotalRecordCount=" + TotalRecordCount +
+        return "Filter{" +
+                "selectedData=" + Arrays.toString(selectedData) +
+                ", params=" + Arrays.toString(params) +
                 '}';
     }
 }

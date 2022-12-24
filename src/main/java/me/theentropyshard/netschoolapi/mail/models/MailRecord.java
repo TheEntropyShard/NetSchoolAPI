@@ -15,19 +15,27 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.reports.schemas;
+package me.theentropyshard.netschoolapi.mail.models;
 
-public class FilterData {
-    public String filterId;
-    public String filterValue;
-    public String filterText;
+public class MailRecord {
+    public String FromEOName;
+    public String FromName;
+    public int MessageId;
+    public String Read;
+    public String Sent;
+    public String SentTo;
+    public String Subj;
 
     @Override
     public String toString() {
-        return "Filter{" +
-                "filterId='" + filterId + '\'' +
-                ", filterValue='" + filterValue + '\'' +
-                ", filterText='" + filterText + '\'' +
+        return "Message{" +
+                "FromEOName='" + FromEOName + '\'' +
+                ", FromName='" + FromName + '\'' +
+                ", MessageId=" + MessageId +
+                ", Read='" + Read + '\'' +
+                ", Sent='" + Sent + '\'' +
+                ", SentTo='" + SentTo + '\'' +
+                ", Subj='" + Subj + '\'' +
                 '}';
     }
 }

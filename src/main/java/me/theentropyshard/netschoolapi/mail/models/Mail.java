@@ -15,34 +15,23 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.diary.schemas;
+package me.theentropyshard.netschoolapi.mail.models;
 
-public class Assignment {
-    public int id;
-    public int typeId;
-    public String assignmentName;
-    public int weight;
-    public String dueDate;
-    public int classMeetingId;
-    public Mark mark;
+import java.util.Arrays;
 
-    public static class Mark {
-        public int assignmentId;
-        public int studentId;
-        public int mark;
-        public String resultScore;
-        public boolean dutyMark;
-    }
+public class Mail {
+    public MailRecord[] Records;
+    public String Result;
+    public int ResultStatus;
+    public int TotalRecordCount;
 
     @Override
     public String toString() {
-        return "Assignment{" +
-                "id=" + id +
-                ", typeId=" + typeId +
-                ", assignmentName='" + assignmentName + '\'' +
-                ", weight=" + weight +
-                ", dueDate='" + dueDate + '\'' +
-                ", classMeetingId=" + classMeetingId +
+        return "Mail{" +
+                "Records=" + Arrays.toString(Records) +
+                ", Result='" + Result + '\'' +
+                ", ResultStatus=" + ResultStatus +
+                ", TotalRecordCount=" + TotalRecordCount +
                 '}';
     }
 }

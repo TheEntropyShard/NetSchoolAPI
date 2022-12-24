@@ -15,35 +15,38 @@
  *      along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.theentropyshard.netschoolapi.diary.schemas;
+package me.theentropyshard.netschoolapi.reports.models;
 
 import java.util.Arrays;
 
-public class Lesson {
-    public int classmeetingId;
-    public String day;
-    public int number;
-    public int relay;
-    public String room;
-    public String startTime;
-    public String endTime;
-    public String subjectName;
-    public Assignment[] assignments;
-    public boolean isEaLesson;
+public class ReportsGroup {
+    public String id;
+    public String notices;
+    public Report[] reports;
+    public String title;
+
+    public static class Report {
+        public String id;
+        public String path;
+        public String title;
+
+        @Override
+        public String toString() {
+            return "Report{" +
+                    "id='" + id + '\'' +
+                    ", path='" + path + '\'' +
+                    ", title='" + title + '\'' +
+                    '}';
+        }
+    }
 
     @Override
     public String toString() {
-        return "Lesson{" +
-                "classmeetingId=" + classmeetingId +
-                ", day='" + day + '\'' +
-                ", number=" + number +
-                ", relay=" + relay +
-                ", room='" + room + '\'' +
-                ", startTime='" + startTime + '\'' +
-                ", endTime='" + endTime + '\'' +
-                ", subjectName='" + subjectName + '\'' +
-                ", assignments=" + Arrays.toString(assignments) +
-                ", isEaLesson=" + isEaLesson +
+        return "ReportsGroup{" +
+                "id='" + id + '\'' +
+                ", notices='" + notices + '\'' +
+                ", reports=" + Arrays.toString(reports) +
+                ", title='" + title + '\'' +
                 '}';
     }
 }
